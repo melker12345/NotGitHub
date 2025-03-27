@@ -1,24 +1,27 @@
-# Project-specific config
-.*rules
+# Dependency directories
+/frontend/node_modules
+/frontend/.pnp
+/frontend/.pnp.js
 
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Build outputs
+/frontend/dist
+/frontend/build
+/backend/bin
 
-# Production
-/build
-/dist
-
-# Misc
-.DS_Store
+# Environment and local files
 .env*
 !.env.example
+.DS_Store
+.idea/
+.vscode/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/frontend/logs
+/backend/logs
+*.log
 
 # Go specific
 *.exe
@@ -28,5 +31,6 @@ yarn-error.log*
 *.dylib
 *.test
 *.out
-/vendor/
-/Godeps/
+/backend/vendor/
+/backend/Godeps/
+

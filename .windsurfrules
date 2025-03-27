@@ -1,0 +1,27 @@
+# Make one feature at a time, so that the GIT history is clear and easy to follow!
+
+## Project Plan:
+
+For my project, I plan to build my own version of GitHub – a platform where users can manage code and collaborate with others. The idea is to create a self-hosted solution, giving users full control over their own projects.
+
+## Objective:
+
+The goal is to develop a platform that is both functional and easy to use, with the core features that GitHub provides. This includes creating and managing repositories, tracking versions, handling issues and pull requests, and having secure user authentication. By adding support for SSH, users will be able to interact with their repositories in a secure way.
+
+## Technologies:
+    - Frontend: I'll use React to build a dynamic and responsive user interface.
+    - Styling: Tailwind CSS will help with efficient and flexible design.
+    - Backend: Golang will be used for the server side, as it's fast and reliable.
+
+## Scope:
+
+The project includes designing and building both the frontend and backend parts, integrating SSH for secure data transfer, and testing and documenting the system.
+
+## Additional information
+You are running on Windows, so no bash commands are available only powershell commands. 
+A clean and simple file structure is important for the project.
+I'll do the running of the application in an external terminal.
+use PowerShell's syntax for creating multiple directories
+
+No demo code 
+After making "one commits worth of code" you NEED to break and tell me "time to commit"
