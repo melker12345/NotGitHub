@@ -2,14 +2,12 @@ package auth
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// JWT secret key - in a real application, this would be stored securely
-// and loaded from an environment variable
-var jwtSecret = []byte("my_secret_key")
 
 // Claims represents the JWT claims
 type Claims struct {
@@ -19,8 +17,19 @@ type Claims struct {
 
 // GenerateToken creates a new JWT token for a user
 func GenerateToken(userID string) (string, error) {
+	// Get JWT secret from environment variable
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	
+	// Get token expiration from environment variable
+	expirationHours := 24 // Default to 24 hours
+	if envExpiration := os.Getenv("JWT_EXPIRATION_HOURS"); envExpiration != "" {
+		if exp, err := strconv.Atoi(envExpiration); err == nil {
+			expirationHours = exp
+		}
+	}
+
 	// Set expiration time for the token
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
 
 	// Create claims with user ID and expiration time
 	claims := &Claims{
@@ -40,6 +49,9 @@ func GenerateToken(userID string) (string, error) {
 
 // ValidateToken validates and parses a JWT token
 func ValidateToken(tokenString string) (*Claims, error) {
+	// Get JWT secret from environment variable
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	
 	// Parse the token
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
