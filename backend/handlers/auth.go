@@ -3,16 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github-clone/auth"
 	"github-clone/models"
 	"github-clone/utils"
 )
-
-// In-memory user storage for demonstration purposes
-// In a real application, we would use a database
-var users = make(map[string]models.User)
 
 // RegisterRequest is the format for registration requests
 type RegisterRequest struct {
@@ -29,7 +24,7 @@ type LoginRequest struct {
 
 // AuthResponse is the format for authentication responses
 type AuthResponse struct {
-	Token string           `json:"token"`
+	Token string             `json:"token"`
 	User  models.UserResponse `json:"user"`
 }
 
@@ -48,16 +43,26 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user already exists by email
-	for _, user := range users {
-		if user.Email == req.Email {
-			http.Error(w, "Email already in use", http.StatusConflict)
-			return
-		}
-		if user.Username == req.Username {
-			http.Error(w, "Username already taken", http.StatusConflict)
-			return
-		}
+	// Check if user already exists
+	existingUser, err := models.GetUserByEmail(req.Email)
+	if err != nil {
+		http.Error(w, "Server error checking user existence", http.StatusInternalServerError)
+		return
+	}
+	if existingUser != nil {
+		http.Error(w, "Email already in use", http.StatusConflict)
+		return
+	}
+
+	// Check if username is taken
+	userByUsername, err := models.GetUserByUsername(req.Username)
+	if err != nil {
+		http.Error(w, "Server error checking username", http.StatusInternalServerError)
+		return
+	}
+	if userByUsername != nil {
+		http.Error(w, "Username already taken", http.StatusConflict)
+		return
 	}
 
 	// Hash password
@@ -67,19 +72,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create user
-	now := time.Now()
-	newUser := models.User{
-		ID:        generateUserID(),
-		Username:  req.Username,
-		Email:     req.Email,
-		Password:  hashedPassword,
-		CreatedAt: now,
-		UpdatedAt: now,
+	// Create user in database
+	newUser, err := models.CreateUser(req.Username, req.Email, hashedPassword)
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
 	}
-
-	// Store user
-	users[newUser.ID] = newUser
 
 	// Generate token
 	token, err := auth.GenerateToken(newUser.ID)
@@ -110,24 +108,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find user by email
-	var foundUser models.User
-	userFound := false
-	for _, user := range users {
-		if user.Email == req.Email {
-			foundUser = user
-			userFound = true
-			break
-		}
+	user, err := models.GetUserByEmail(req.Email)
+	if err != nil {
+		http.Error(w, "Server error during login", http.StatusInternalServerError)
+		return
 	}
 
 	// Check if user exists and password is correct
-	if !userFound || !utils.CheckPasswordHash(req.Password, foundUser.Password) {
+	if user == nil || !utils.CheckPasswordHash(req.Password, user.Password) {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	// Generate token
-	token, err := auth.GenerateToken(foundUser.ID)
+	token, err := auth.GenerateToken(user.ID)
 	if err != nil {
 		http.Error(w, "Failed to generate authentication token", http.StatusInternalServerError)
 		return
@@ -136,16 +130,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Create response
 	resp := AuthResponse{
 		Token: token,
-		User:  foundUser.ToResponse(),
+		User:  user.ToResponse(),
 	}
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
-}
-
-// Helper function to generate a simple user ID
-// In a real app, we would use a more robust method
-func generateUserID() string {
-	return "user_" + time.Now().Format("20060102150405")
 }

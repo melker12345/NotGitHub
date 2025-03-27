@@ -4,11 +4,24 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"github-clone/config"
 	"github-clone/handlers"
 	"github.com/gorilla/mux"
 )
 
 func main() {
+	// Load environment variables
+	config.LoadEnv()
+	
+	// Connect to the database
+	if err := config.ConnectDB(); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	
+	// Close database connection when application exits
+	defer config.DB.Close()
+	
+	// Set up server port
 	port := "8080"
 	
 	// Create a new router
