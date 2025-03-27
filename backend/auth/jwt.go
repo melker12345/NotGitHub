@@ -9,6 +9,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JWT-related errors
+var (
+	ErrInvalidToken = errors.New("invalid or expired token")
+)
+
 // Claims represents the JWT claims
 type Claims struct {
 	UserID string `json:"user_id"`
@@ -63,7 +68,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	if !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, ErrInvalidToken
 	}
 
 	return claims, nil

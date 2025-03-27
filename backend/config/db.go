@@ -48,6 +48,37 @@ func ConnectDB() error {
 			updated_at TIMESTAMP NOT NULL
 		)
 	`)
+	if err != nil {
+		return err
+	}
+	
+	// Create the repositories table if it doesn't exist
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS repositories (
+			id VARCHAR(36) PRIMARY KEY,
+			name VARCHAR(100) NOT NULL,
+			description TEXT,
+			owner_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			is_public BOOLEAN NOT NULL DEFAULT true,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			UNIQUE(owner_id, name)
+		)
+	`)
+	if err != nil {
+		return err
+	}
+	
+	// Create the collaborators table for repository access management
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS repository_collaborators (
+			repository_id VARCHAR(36) NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+			user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			permission VARCHAR(20) NOT NULL, -- 'read', 'write', 'admin'
+			created_at TIMESTAMP NOT NULL,
+			PRIMARY KEY (repository_id, user_id)
+		)
+	`)
 
 	return err
 }

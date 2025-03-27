@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	
 	"github-clone/config"
 	"github-clone/handlers"
+	
 	"github.com/gorilla/mux"
 )
 
@@ -35,6 +37,13 @@ func main() {
 	// Auth routes
 	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST")
 	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST")
+	
+	// Repository routes
+	router.HandleFunc("/api/repositories", handlers.CreateRepository).Methods("POST")
+	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET")
+	router.HandleFunc("/api/repositories/{id}", handlers.GetRepository).Methods("GET")
+	router.HandleFunc("/api/repositories/{id}", handlers.UpdateRepository).Methods("PUT")
+	router.HandleFunc("/api/repositories/{id}", handlers.DeleteRepository).Methods("DELETE")
 	
 	// Enable CORS
 	router.Use(corsMiddleware)
