@@ -52,6 +52,9 @@ func main() {
 	// Create a new router
 	router := mux.NewRouter()
 	
+	// Apply CORS middleware BEFORE defining routes
+	router.Use(corsMiddleware)
+	
 	// API routes
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Server is running")
@@ -72,9 +75,6 @@ func main() {
 	router.HandleFunc("/api/ssh-keys", handlers.AddSSHKey).Methods("POST")
 	router.HandleFunc("/api/ssh-keys", handlers.GetSSHKeys).Methods("GET")
 	router.HandleFunc("/api/ssh-keys/{id}", handlers.DeleteSSHKey).Methods("DELETE")
-	
-	// Enable CORS
-	router.Use(corsMiddleware)
 	
 	// Start the HTTP server
 	log.Printf("HTTP server starting on port %s", httpPort)
