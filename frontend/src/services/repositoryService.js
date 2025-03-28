@@ -11,12 +11,16 @@ const repositoryService = {
   },
 
   /**
-   * Get a specific repository by ID
-   * @param {string} id Repository ID
+   * Get a specific repository by username and repository name
+   * @param {string} username Username of the repository owner
+   * @param {string} repoName Repository name
    * @returns {Promise} Promise with the repository data
    */
-  getRepository: async (id) => {
-    const response = await api.get(`/repositories/${id}`);
+  getRepositoryByPath: async (username, repoName) => {
+    // Add the API prefix to the GitHub-style URL
+    const response = await api.get(`/${username}/${repoName}`, {
+      baseURL: 'http://localhost:8080/api' // Explicitly set the base URL to ensure API prefix
+    });
     return response.data;
   },
   
@@ -32,23 +36,53 @@ const repositoryService = {
   
   /**
    * Update an existing repository
-   * @param {string} id Repository ID
+   * @param {string} username Username of the repository owner
+   * @param {string} repoName Repository name
    * @param {Object} repositoryData Updated repository data
    * @returns {Promise} Promise with the updated repository data
    */
-  updateRepository: async (id, repositoryData) => {
-    const response = await api.put(`/repositories/${id}`, repositoryData);
+  updateRepositoryByPath: async (username, repoName, repositoryData) => {
+    const response = await api.put(`/${username}/${repoName}`, repositoryData, {
+      baseURL: 'http://localhost:8080/api'
+    });
     return response.data;
   },
-  
+
   /**
    * Delete a repository
-   * @param {string} id Repository ID
+   * @param {string} username Username of the repository owner
+   * @param {string} repoName Repository name
    * @returns {Promise} Promise with the response
    */
-  deleteRepository: async (id) => {
-    const response = await api.delete(`/repositories/${id}`);
+  deleteRepositoryByPath: async (username, repoName) => {
+    const response = await api.delete(`/${username}/${repoName}`, {
+      baseURL: 'http://localhost:8080/api'
+    });
     return response.data;
+  },
+
+  /**
+   * Generate clone URLs for a repository
+   * @param {Object} repository Repository object
+   * @returns {Object} Object containing HTTPS and SSH clone URLs
+   */
+  getCloneUrls: (repository) => {
+    if (!repository || !repository.owner) {
+      console.error('Repository or repository owner is undefined');
+      return {
+        https: '',
+        ssh: ''
+      };
+    }
+
+    const username = repository.owner.username;
+    const repoName = repository.name;
+    
+    // GitHub-style URLs
+    return {
+      https: `http://localhost:8080/${username}/${repoName}.git`,
+      ssh: `ssh://git@localhost:8080/${username}/${repoName}.git`
+    };
   }
 };
 

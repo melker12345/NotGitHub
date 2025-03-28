@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import repositoryService from '../services/repositoryService';
 
 function RepositorySettingsPage() {
-  const { id } = useParams();
+  const { username, reponame } = useParams();
   const navigate = useNavigate();
   const [repository, setRepository] = useState(null);
   const [formData, setFormData] = useState({
@@ -19,7 +19,7 @@ function RepositorySettingsPage() {
   useEffect(() => {
     const fetchRepository = async () => {
       try {
-        const data = await repositoryService.getRepository(id);
+        const data = await repositoryService.getRepositoryByPath(username, reponame);
         setRepository(data);
         setFormData({
           name: data.name,
@@ -36,7 +36,7 @@ function RepositorySettingsPage() {
     };
 
     fetchRepository();
-  }, [id]);
+  }, [username, reponame]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -53,7 +53,7 @@ function RepositorySettingsPage() {
     setSuccessMessage('');
 
     try {
-      await repositoryService.updateRepository(id, formData);
+      await repositoryService.updateRepositoryByPath(username, reponame, formData);
       setSuccessMessage('Repository settings updated successfully');
       
       // Update local repository state
@@ -91,7 +91,7 @@ function RepositorySettingsPage() {
             Return to home
           </Link>
         </p>
-      </div>
+    </div>
     );
   }
 
@@ -99,7 +99,10 @@ function RepositorySettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-2 mb-6">
-        <Link to={`/repositories/${id}`} className="text-blue-600 hover:underline">
+        <Link 
+          to={`/${username}/${reponame}`} 
+          className="text-blue-600 hover:underline"
+        >
           {repository?.name}
         </Link>
         <span className="text-gray-500">/</span>
@@ -199,7 +202,7 @@ function RepositorySettingsPage() {
               </p>
             </div>
             <Link
-              to={`/repositories/${id}`}
+              to={`/${username}/${reponame}`}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm"
             >
               Delete repository

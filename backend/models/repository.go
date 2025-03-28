@@ -20,6 +20,7 @@ type Repository struct {
 	IsPublic    bool      `json:"is_public"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	Owner       *User     `json:"owner,omitempty"` // Owner information
 }
 
 // RepositoryInput is used for creating or updating repositories
@@ -78,51 +79,112 @@ func CreateRepository(ownerID string, input RepositoryInput) (*Repository, error
 
 // GetRepositoryByID fetches a repository by its ID
 func GetRepositoryByID(id string) (*Repository, error) {
+	query := `
+		SELECT r.id, r.name, r.description, r.owner_id, r.is_public, r.created_at, r.updated_at,
+		       u.id, u.username, u.email, u.created_at
+		FROM repositories r
+		LEFT JOIN users u ON r.owner_id = u.id
+		WHERE r.id = ?
+	`
+	
 	var repo Repository
+	var owner User
 	
-	err := config.DB.QueryRow(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE id = ?",
-		id,
-	).Scan(&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt)
-	
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	// Query the database
+	err := config.DB.QueryRow(query, id).Scan(
+		&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt,
+		&owner.ID, &owner.Username, &owner.Email, &owner.CreatedAt,
+	)
 	
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No repository found
+		}
 		return nil, err
 	}
+	
+	// Set the owner
+	repo.Owner = &owner
 	
 	return &repo, nil
 }
 
 // GetRepositoryByOwnerAndName fetches a repository by owner ID and repository name
 func GetRepositoryByOwnerAndName(ownerID, name string) (*Repository, error) {
+	query := `
+		SELECT r.id, r.name, r.description, r.owner_id, r.is_public, r.created_at, r.updated_at,
+		       u.id, u.username, u.email, u.created_at
+		FROM repositories r
+		LEFT JOIN users u ON r.owner_id = u.id
+		WHERE r.owner_id = ? AND r.name = ?
+	`
+	
 	var repo Repository
+	var owner User
 	
-	err := config.DB.QueryRow(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = ? AND name = ?",
-		ownerID, name,
-	).Scan(&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt)
-	
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
+	// Query the database
+	err := config.DB.QueryRow(query, ownerID, name).Scan(
+		&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt,
+		&owner.ID, &owner.Username, &owner.Email, &owner.CreatedAt,
+	)
 	
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No repository found
+		}
 		return nil, err
 	}
+	
+	// Set the owner
+	repo.Owner = &owner
+	
+	return &repo, nil
+}
+
+// GetRepositoryByUsernameAndName fetches a repository by username and repository name
+func GetRepositoryByUsernameAndName(username, repoName string) (*Repository, error) {
+	query := `
+		SELECT r.id, r.name, r.description, r.owner_id, r.is_public, r.created_at, r.updated_at,
+		       u.id, u.username, u.email, u.created_at
+		FROM repositories r
+		JOIN users u ON r.owner_id = u.id
+		WHERE u.username = ? AND r.name = ?
+	`
+	
+	var repo Repository
+	var owner User
+	
+	// Query the database
+	err := config.DB.QueryRow(query, username, repoName).Scan(
+		&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt,
+		&owner.ID, &owner.Username, &owner.Email, &owner.CreatedAt,
+	)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No repository found
+		}
+		return nil, err
+	}
+	
+	// Set the owner
+	repo.Owner = &owner
 	
 	return &repo, nil
 }
 
 // GetUserRepositories fetches all repositories owned by a user
 func GetUserRepositories(userID string) ([]*Repository, error) {
-	rows, err := config.DB.Query(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = ? ORDER BY created_at DESC",
-		userID,
-	)
+	query := `
+		SELECT r.id, r.name, r.description, r.owner_id, r.is_public, r.created_at, r.updated_at,
+		       u.id, u.username, u.email, u.created_at
+		FROM repositories r
+		LEFT JOIN users u ON r.owner_id = u.id
+		WHERE r.owner_id = ?
+		ORDER BY r.created_at DESC
+	`
 	
+	rows, err := config.DB.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -132,11 +194,25 @@ func GetUserRepositories(userID string) ([]*Repository, error) {
 	
 	for rows.Next() {
 		var repo Repository
-		err := rows.Scan(&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt)
+		var owner User
+		
+		err := rows.Scan(
+			&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt,
+			&owner.ID, &owner.Username, &owner.Email, &owner.CreatedAt,
+		)
+		
 		if err != nil {
 			return nil, err
 		}
+		
+		// Set the owner
+		repo.Owner = &owner
+		
 		repositories = append(repositories, &repo)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	
 	return repositories, nil

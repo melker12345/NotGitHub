@@ -52,7 +52,7 @@ func main() {
 	// Create a new router
 	router := mux.NewRouter()
 	
-	// Apply CORS middleware BEFORE defining routes
+	// Apply CORS middleware to all routes
 	router.Use(corsMiddleware)
 	
 	// API routes
@@ -64,12 +64,17 @@ func main() {
 	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST", "OPTIONS")
 	
-	// Repository routes - explicitly allow OPTIONS
-	router.HandleFunc("/api/repositories", handlers.CreateRepository).Methods("POST", "OPTIONS")
+	// GitHub-like Repository routes (username/reponame style)
+	router.HandleFunc("/api/{username}/{reponame}", handlers.GetRepositoryByUsername).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/{username}/{reponame}", handlers.UpdateRepositoryByUsername).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/api/{username}/{reponame}", handlers.DeleteRepositoryByUsername).Methods("DELETE", "OPTIONS")
+	router.HandleFunc("/api/{username}/{reponame}/contents", handlers.GetRepositoryContentsByUsername).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/{username}/{reponame}/file", handlers.GetFileContentByUsername).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/{username}/{reponame}/commits", handlers.GetCommitHistoryByUsername).Methods("GET", "OPTIONS")
+	
+	// Repository listing and creation endpoints
 	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/repositories/{id}", handlers.GetRepository).Methods("GET", "OPTIONS")
-	router.HandleFunc("/api/repositories/{id}", handlers.UpdateRepository).Methods("PUT", "OPTIONS")
-	router.HandleFunc("/api/repositories/{id}", handlers.DeleteRepository).Methods("DELETE", "OPTIONS")
+	router.HandleFunc("/api/repositories", handlers.CreateRepository).Methods("POST", "OPTIONS")
 	
 	// SSH Key routes - explicitly allow OPTIONS
 	router.HandleFunc("/api/ssh-keys", handlers.AddSSHKey).Methods("POST", "OPTIONS")

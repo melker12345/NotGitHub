@@ -45,7 +45,7 @@ function RepositoriesList() {
       <div className="bg-white p-6 rounded-lg shadow-md text-center">
         <p className="text-gray-600 mb-4">You don't have any repositories yet.</p>
         <Link 
-          to="/new-repository" 
+          to="/repositories/new" 
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
           Create Repository
@@ -59,7 +59,7 @@ function RepositoriesList() {
       <ul className="divide-y divide-gray-200">
         {repositories.map((repo) => (
           <li key={repo.id} className="p-4 hover:bg-gray-50">
-            <Link to={`/repositories/${repo.id}`} className="block">
+            <Link to={`/${repo.owner?.username || 'user'}/${repo.name}`} className="block">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-blue-600">{repo.name}</h3>

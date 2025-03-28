@@ -45,9 +45,11 @@ export const repositoryService = {
     return api.get('/repositories');
   },
   
-  // Get a specific repository by ID
-  getRepository: (id) => {
-    return api.get(`/repositories/${id}`);
+  // Get a repository by username and repository name (GitHub-style URL)
+  getRepositoryByPath: (username, repoName) => {
+    return api.get(`/${username}/${repoName}`, {
+      baseURL: API_URL
+    });
   },
   
   // Create a new repository
@@ -55,14 +57,18 @@ export const repositoryService = {
     return api.post('/repositories', repositoryData);
   },
   
-  // Update an existing repository
-  updateRepository: (id, repositoryData) => {
-    return api.put(`/repositories/${id}`, repositoryData);
+  // Update a repository by username and repository name (GitHub-style URL)
+  updateRepositoryByPath: (username, repoName, repositoryData) => {
+    return api.put(`/${username}/${repoName}`, repositoryData, {
+      baseURL: API_URL
+    });
   },
   
-  // Delete a repository
-  deleteRepository: (id) => {
-    return api.delete(`/repositories/${id}`);
+  // Delete a repository by username and repository name (GitHub-style URL)
+  deleteRepositoryByPath: (username, repoName) => {
+    return api.delete(`/${username}/${repoName}`, {
+      baseURL: API_URL
+    });
   },
 };
 

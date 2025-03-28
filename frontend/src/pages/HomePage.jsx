@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import RepositoriesList from '../components/repositories/RepositoriesList';
+
 function HomePage() {
   return (
     <div className="space-y-8">
@@ -7,9 +10,9 @@ function HomePage() {
           A self-hosted platform for managing code and collaborating with others
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+          <Link to="/repositories/new" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
             Create Repository
-          </button>
+          </Link>
           <button className="border border-gray-300 hover:border-gray-400 px-6 py-2 rounded-md">
             Explore Projects
           </button>
@@ -29,6 +32,19 @@ function HomePage() {
           <h2 className="text-xl font-semibold mb-3">Collaborate Securely</h2>
           <p className="text-gray-600">Work together with team members using SSH and pull requests</p>
         </div>
+      </section>
+      
+      <section>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Your Repositories</h2>
+          <Link to="/repositories/new" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            New
+          </Link>
+        </div>
+        <RepositoriesList />
       </section>
     </div>
   )

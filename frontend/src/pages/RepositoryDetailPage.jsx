@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import repositoryService from '../services/repositoryService';
 
 function RepositoryDetailPage() {
-  const { id } = useParams();
+  const { username, reponame } = useParams();
   const navigate = useNavigate();
   const [repository, setRepository] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,23 +14,23 @@ function RepositoryDetailPage() {
   useEffect(() => {
     const fetchRepository = async () => {
       try {
-        const data = await repositoryService.getRepository(id);
+        const data = await repositoryService.getRepositoryByPath(username, reponame);
         setRepository(data);
         setError('');
       } catch (err) {
         console.error('Error fetching repository:', err);
-        setError('Failed to load repository details');
+        setError('Failed to load repository');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRepository();
-  }, [id]);
+  }, [username, reponame]);
 
   const handleDelete = async () => {
     try {
-      await repositoryService.deleteRepository(id);
+      await repositoryService.deleteRepositoryByPath(username, reponame);
       navigate('/');
     } catch (err) {
       console.error('Error deleting repository:', err);
@@ -77,9 +77,8 @@ function RepositoryDetailPage() {
     );
   }
 
-  // Construct clone URLs
-  const httpsCloneUrl = `http://localhost:8080/git/${repository.owner.username}/${repository.name}.git`;
-  const sshCloneUrl = `ssh://git@localhost:2222/${repository.owner.username}/${repository.name}.git`;
+  // Safely get clone URLs
+  const { https: httpsCloneUrl, ssh: sshCloneUrl } = repositoryService.getCloneUrls(repository);
 
   return (
     <div className="space-y-6">
@@ -102,7 +101,16 @@ function RepositoryDetailPage() {
           </div>
           <div className="flex space-x-2">
             <Link
-              to={`/repositories/${id}/settings`}
+              to={`/${username}/${reponame}/browser`}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Browse Files
+            </Link>
+            <Link
+              to={`/${username}/${reponame}/settings`}
               className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
             >
               Settings
@@ -176,10 +184,75 @@ function RepositoryDetailPage() {
       {/* Repository Files */}
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Repository Files</h2>
-        <div className="bg-gray-100 p-8 rounded-md text-center">
-          <p className="text-gray-600">
-            This repository is empty. Clone the repository and push code to see files here.
+        <div className="bg-gray-100 p-8 rounded-md">
+          <h3 className="text-lg font-medium mb-4">Quick setup — if you've done this kind of thing before</h3>
+          
+          <div className="flex items-center mb-6">
+            <div className="flex-grow bg-gray-200 rounded-md p-3 font-mono text-sm overflow-x-auto">
+              {httpsCloneUrl}
+            </div>
+            <button 
+              onClick={() => copyToClipboard(httpsCloneUrl)}
+              className="ml-2 p-2 bg-gray-300 hover:bg-gray-400 rounded-md"
+              title="Copy to clipboard"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+              </svg>
+            </button>
+          </div>
+          
+          <p className="mb-6">
+            Get started by creating a new file or uploading an existing file. We recommend every repository include a README, LICENSE, and .gitignore.
           </p>
+          
+          <div className="space-y-6">
+            <div>
+              <h4 className="font-medium mb-2">…or create a new repository on the command line</h4>
+              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+{`echo "# ${repository.name}" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin ${httpsCloneUrl}
+git push -u origin main`}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2">…or push an existing repository from the command line</h4>
+              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+{`git remote add origin ${httpsCloneUrl}
+git branch -M main
+git push -u origin main`}
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2">…or clone using SSH</h4>
+              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+{`git clone ${sshCloneUrl}
+cd ${repository.name}`}
+              </div>
+              <p className="mt-2 text-sm text-gray-600">
+                Don't forget to <Link to="/ssh-keys" className="text-blue-600 hover:underline">add your SSH key</Link> before using SSH to clone.
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-center">
+            <Link
+              to={`/${username}/${reponame}/browser`}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Browse Repository Files
+            </Link>
+          </div>
         </div>
       </div>
 
