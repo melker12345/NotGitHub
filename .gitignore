@@ -34,3 +34,9 @@ yarn-error.log*
 /backend/vendor/
 /backend/Godeps/
 
+# Add to .gitignore
+backend/ssh_host_key
+backend/ssh_host_key.pub
+testSSH.txt
+testSSH.txt.pub
+backend/ssh_host_key.pub

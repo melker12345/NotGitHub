@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	
 	"github-clone/config"
 	"github-clone/handlers"
+	"github-clone/ssh"
 	
 	"github.com/gorilla/mux"
 )
@@ -24,7 +27,27 @@ func main() {
 	defer config.DB.Close()
 	
 	// Set up server port
-	port := "8080"
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "8080"
+	}
+	
+	// Set up SSH server port
+	sshPort := os.Getenv("SSH_PORT")
+	if sshPort == "" {
+		sshPort = "2222" // Default SSH port is 22, but we use 2222 to avoid conflicts
+	}
+	
+	// Set up host key path
+	hostKeyPath := os.Getenv("SSH_HOST_KEY_PATH")
+	if hostKeyPath == "" {
+		// Default to a file in the current directory
+		dir, _ := os.Getwd()
+		hostKeyPath = filepath.Join(dir, "ssh_host_key")
+	}
+	
+	// Start SSH server in a goroutine
+	go startSSHServer(sshPort, hostKeyPath)
 	
 	// Create a new router
 	router := mux.NewRouter()
@@ -45,13 +68,35 @@ func main() {
 	router.HandleFunc("/api/repositories/{id}", handlers.UpdateRepository).Methods("PUT")
 	router.HandleFunc("/api/repositories/{id}", handlers.DeleteRepository).Methods("DELETE")
 	
+	// SSH Key routes
+	router.HandleFunc("/api/ssh-keys", handlers.AddSSHKey).Methods("POST")
+	router.HandleFunc("/api/ssh-keys", handlers.GetSSHKeys).Methods("GET")
+	router.HandleFunc("/api/ssh-keys/{id}", handlers.DeleteSSHKey).Methods("DELETE")
+	
 	// Enable CORS
 	router.Use(corsMiddleware)
 	
-	// Start the server
-	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Start the HTTP server
+	log.Printf("HTTP server starting on port %s", httpPort)
+	if err := http.ListenAndServe(":"+httpPort, router); err != nil {
+		log.Fatalf("Failed to start HTTP server: %v", err)
+	}
+}
+
+// startSSHServer initializes and starts the SSH server
+func startSSHServer(port, hostKeyPath string) {
+	listenAddr := fmt.Sprintf("0.0.0.0:%s", port)
+	
+	// Create a new SSH server
+	server, err := ssh.NewServer(listenAddr, hostKeyPath)
+	if err != nil {
+		log.Fatalf("Failed to create SSH server: %v", err)
+	}
+	
+	// Start the server (this will block)
+	log.Printf("Starting SSH server on port %s", port)
+	if err := server.Start(); err != nil {
+		log.Fatalf("Failed to start SSH server: %v", err)
 	}
 }
 

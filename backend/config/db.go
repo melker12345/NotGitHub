@@ -102,6 +102,22 @@ func ConnectDB() error {
 	if err != nil {
 		return fmt.Errorf("error creating repository_collaborators table: %w", err)
 	}
+	
+	// Create the SSH keys table for user authentication
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS ssh_keys (
+			id TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			public_key TEXT NOT NULL,
+			fingerprint TEXT UNIQUE NOT NULL,
+			created_at TIMESTAMP NOT NULL,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("error creating ssh_keys table: %w", err)
+	}
 
 	return nil
 }
