@@ -3,11 +3,10 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github-clone/config"
+	"github-clone/utils"
 	
 	"github.com/google/uuid"
 )
@@ -47,21 +46,30 @@ func CreateRepository(ownerID string, input RepositoryInput) (*Repository, error
 		UpdatedAt:   now,
 	}
 	
-	// Insert the repository into the database
-	_, err := config.DB.Exec(
-		"INSERT INTO repositories (id, name, description, owner_id, is_public, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-		repo.ID, repo.Name, repo.Description, repo.OwnerID, repo.IsPublic, repo.CreatedAt, repo.UpdatedAt,
-	)
-	
+	// Create repository directory structure and initialize Git repository
+	repoPath := utils.GetRepositoryPath(ownerID, input.Name)
+	err := utils.InitializeGitRepository(repoPath)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Create repository directory structure
-	err = createRepositoryFileSystem(repo.OwnerID, repo.Name)
+	// Set up repository hooks
+	err = utils.CreateRepositoryHooks(repoPath)
 	if err != nil {
-		// If filesystem creation fails, attempt to rollback the database insertion
-		config.DB.Exec("DELETE FROM repositories WHERE id = $1", repo.ID)
+		// If hooks creation fails, attempt to clean up the repository
+		utils.DeleteGitRepository(repoPath)
+		return nil, err
+	}
+	
+	// Insert the repository into the database
+	_, err = config.DB.Exec(
+		"INSERT INTO repositories (id, name, description, owner_id, is_public, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		repo.ID, repo.Name, repo.Description, repo.OwnerID, repo.IsPublic, repo.CreatedAt, repo.UpdatedAt,
+	)
+	
+	if err != nil {
+		// If database insertion fails, clean up the Git repository
+		utils.DeleteGitRepository(repoPath)
 		return nil, err
 	}
 	
@@ -73,7 +81,7 @@ func GetRepositoryByID(id string) (*Repository, error) {
 	var repo Repository
 	
 	err := config.DB.QueryRow(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE id = $1",
+		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE id = ?",
 		id,
 	).Scan(&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt)
 	
@@ -93,7 +101,7 @@ func GetRepositoryByOwnerAndName(ownerID, name string) (*Repository, error) {
 	var repo Repository
 	
 	err := config.DB.QueryRow(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = $1 AND name = $2",
+		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = ? AND name = ?",
 		ownerID, name,
 	).Scan(&repo.ID, &repo.Name, &repo.Description, &repo.OwnerID, &repo.IsPublic, &repo.CreatedAt, &repo.UpdatedAt)
 	
@@ -111,7 +119,7 @@ func GetRepositoryByOwnerAndName(ownerID, name string) (*Repository, error) {
 // GetUserRepositories fetches all repositories owned by a user
 func GetUserRepositories(userID string) ([]*Repository, error) {
 	rows, err := config.DB.Query(
-		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = $1 ORDER BY created_at DESC",
+		"SELECT id, name, description, owner_id, is_public, created_at, updated_at FROM repositories WHERE owner_id = ? ORDER BY created_at DESC",
 		userID,
 	)
 	
@@ -154,7 +162,7 @@ func UpdateRepository(id string, input RepositoryInput) (*Repository, error) {
 	
 	// Update the repository in the database
 	_, err = config.DB.Exec(
-		"UPDATE repositories SET name = $1, description = $2, is_public = $3, updated_at = $4 WHERE id = $5",
+		"UPDATE repositories SET name = ?, description = ?, is_public = ?, updated_at = ? WHERE id = ?",
 		repo.Name, repo.Description, repo.IsPublic, repo.UpdatedAt, repo.ID,
 	)
 	
@@ -178,62 +186,14 @@ func DeleteRepository(id string) error {
 	}
 	
 	// Delete from database first
-	_, err = config.DB.Exec("DELETE FROM repositories WHERE id = $1", id)
+	_, err = config.DB.Exec("DELETE FROM repositories WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
 	
 	// Then delete from filesystem
-	err = deleteRepositoryFileSystem(repo.OwnerID, repo.Name)
+	repoPath := utils.GetRepositoryPath(repo.OwnerID, repo.Name)
+	err = utils.DeleteGitRepository(repoPath)
 	
 	return err
-}
-
-// Helper function to create the filesystem structure for a repository
-func createRepositoryFileSystem(ownerID, repoName string) error {
-	// Get the base repositories directory
-	reposPath := getRepositoriesBasePath()
-	
-	// Build the repository path
-	repoPath := filepath.Join(reposPath, ownerID, repoName)
-	
-	// Create the directory
-	err := os.MkdirAll(repoPath, 0755)
-	if err != nil {
-		return err
-	}
-	
-	// Initialize a bare git repository
-	// This would typically execute something like: git init --bare
-	// For now, we'll just create a placeholder file
-	placeholderPath := filepath.Join(repoPath, "README.md")
-	err = os.WriteFile(placeholderPath, []byte("# "+repoName+"\n\nRepository created successfully."), 0644)
-	
-	return err
-}
-
-// Helper function to delete the filesystem structure for a repository
-func deleteRepositoryFileSystem(ownerID, repoName string) error {
-	// Get the repository path
-	reposPath := getRepositoriesBasePath()
-	repoPath := filepath.Join(reposPath, ownerID, repoName)
-	
-	// Delete the directory and all content
-	return os.RemoveAll(repoPath)
-}
-
-// Helper function to get the base path for all repositories
-func getRepositoriesBasePath() string {
-	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
-	if baseRepoPath == "" {
-		// Default to a subdirectory in the current working directory
-		// In production, this should be set by environment variable
-		dir, _ := os.Getwd()
-		baseRepoPath = filepath.Join(dir, "repositories")
-	}
-	
-	// Ensure the base directory exists
-	os.MkdirAll(baseRepoPath, 0755)
-	
-	return baseRepoPath
 }
