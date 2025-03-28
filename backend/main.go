@@ -58,23 +58,23 @@ func main() {
 	// API routes
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Server is running")
-	})
+	}).Methods("GET", "OPTIONS")
 	
-	// Auth routes
-	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST")
-	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST")
+	// Auth routes - explicitly allow OPTIONS
+	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST", "OPTIONS")
 	
-	// Repository routes
-	router.HandleFunc("/api/repositories", handlers.CreateRepository).Methods("POST")
-	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET")
-	router.HandleFunc("/api/repositories/{id}", handlers.GetRepository).Methods("GET")
-	router.HandleFunc("/api/repositories/{id}", handlers.UpdateRepository).Methods("PUT")
-	router.HandleFunc("/api/repositories/{id}", handlers.DeleteRepository).Methods("DELETE")
+	// Repository routes - explicitly allow OPTIONS
+	router.HandleFunc("/api/repositories", handlers.CreateRepository).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/repositories/{id}", handlers.GetRepository).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/repositories/{id}", handlers.UpdateRepository).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/api/repositories/{id}", handlers.DeleteRepository).Methods("DELETE", "OPTIONS")
 	
-	// SSH Key routes
-	router.HandleFunc("/api/ssh-keys", handlers.AddSSHKey).Methods("POST")
-	router.HandleFunc("/api/ssh-keys", handlers.GetSSHKeys).Methods("GET")
-	router.HandleFunc("/api/ssh-keys/{id}", handlers.DeleteSSHKey).Methods("DELETE")
+	// SSH Key routes - explicitly allow OPTIONS
+	router.HandleFunc("/api/ssh-keys", handlers.AddSSHKey).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/ssh-keys", handlers.GetSSHKeys).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/ssh-keys/{id}", handlers.DeleteSSHKey).Methods("DELETE", "OPTIONS")
 	
 	// Start the HTTP server
 	log.Printf("HTTP server starting on port %s", httpPort)
@@ -103,18 +103,19 @@ func startSSHServer(port, hostKeyPath string) {
 // CORS middleware to allow requests from the frontend
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
+		// Set CORS headers for all requests
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Max-Age", "3600") // Cache preflight response for 1 hour
 		
-		// Handle preflight requests
+		// Handle preflight OPTIONS requests immediately
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 		
-		// Call the next handler
+		// Call the next handler for non-OPTIONS requests
 		next.ServeHTTP(w, r)
 	})
 }
