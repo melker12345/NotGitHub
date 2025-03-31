@@ -80,6 +80,31 @@ func GetSSHKeysByUserID(userID string) ([]*SSHKey, error) {
 	return keys, nil
 }
 
+// GetAllSSHKeys retrieves all SSH keys in the database
+func GetAllSSHKeys() ([]*SSHKey, error) {
+	rows, err := config.DB.Query(
+		"SELECT id, user_id, name, public_key, fingerprint, created_at FROM ssh_keys",
+	)
+	
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	keys := []*SSHKey{}
+	
+	for rows.Next() {
+		var key SSHKey
+		err := rows.Scan(&key.ID, &key.UserID, &key.Name, &key.PublicKey, &key.Fingerprint, &key.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, &key)
+	}
+	
+	return keys, nil
+}
+
 // GetSSHKeyByID retrieves an SSH key by its ID
 func GetSSHKeyByID(id string) (*SSHKey, error) {
 	var key SSHKey
@@ -108,8 +133,8 @@ func GetUserBySSHKey(fingerprint string) (*User, error) {
 		SELECT u.id, u.username, u.email, u.password, u.created_at, u.updated_at 
 		FROM users u
 		JOIN ssh_keys s ON u.id = s.user_id
-		WHERE s.fingerprint = ?
-	`, fingerprint).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+		WHERE s.fingerprint = ?`,
+		fingerprint).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
 	
 	if err == sql.ErrNoRows {
 		return nil, nil

@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github-clone/models"
-	"github-clone/utils"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -105,8 +104,11 @@ func (s *Server) handleConnection(conn net.Conn) {
 			continue
 		}
 
-		// Handle requests on this channel
-		go s.handleChannelRequests(channel, requests, sshConn.Permissions.Extensions["username"])
+		// Get username from connection
+		username := sshConn.Permissions.Extensions["username"]
+		
+		// Handle channel requests (exec, shell, etc.)
+		go s.handleChannelRequests(channel, requests, username)
 	}
 }
 
@@ -117,136 +119,117 @@ func (s *Server) handleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 	for req := range requests {
 		switch req.Type {
 		case "exec":
-			// Handle Git commands (git-upload-pack, git-receive-pack)
+			// Handle exec request (Git command)
 			s.handleExecRequest(channel, req, username)
-
-		case "env":
-			// Environment variables - just acknowledge them
-			req.Reply(true, nil)
-
+			return
 		default:
-			log.Printf("Unsupported request type: %s", req.Type)
-			req.Reply(false, nil)
+			if req.WantReply {
+				req.Reply(false, nil)
+			}
 		}
 	}
 }
 
 // handleExecRequest processes an exec request (Git command)
 func (s *Server) handleExecRequest(channel ssh.Channel, req *ssh.Request, username string) {
-	// Parse the command from the request payload
-	command := string(req.Payload[4:]) // Skip the uint32 length prefix
-	log.Printf("Received exec request: %s", command)
-
 	// Acknowledge the request
-	req.Reply(true, nil)
+	if req.WantReply {
+		req.Reply(true, nil)
+	}
 
-	// Determine the Git operation and repository path
-	if strings.HasPrefix(command, "git-upload-pack") || strings.HasPrefix(command, "git-receive-pack") {
+	// Parse the command
+	command := string(req.Payload[4:]) // Skip the 4-byte length prefix
+	log.Printf("Exec request from %s: %s", username, command)
+
+	// Handle Git commands
+	if strings.HasPrefix(command, "git-") || strings.HasPrefix(command, "git ") {
 		s.handleGitCommand(channel, command, username)
 	} else {
-		fmt.Fprintf(channel, "Unsupported command: %s\n", command)
-		channel.CloseWrite()
-		return
+		fmt.Fprintf(channel.Stderr(), "Unsupported command: %s\n", command)
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 	}
 }
 
 // handleGitCommand executes a Git command (upload-pack or receive-pack)
 func (s *Server) handleGitCommand(channel ssh.Channel, command string, username string) {
-	defer channel.CloseWrite()
+	log.Printf("Git command from %s: %s", username, command)
 
-	// Parse repository path from command
-	// Format: git-upload-pack '/owner/repo.git' or git-receive-pack '/owner/repo.git'
-	parts := strings.Split(command, " ")
-	if len(parts) < 2 {
-		fmt.Fprintf(channel, "Invalid command format\n")
+	// Parse the command to extract the repository path
+	var repoPath string
+	var gitCommand string
+
+	if strings.HasPrefix(command, "git-upload-pack") {
+		parts := strings.SplitN(command, "'", 3)
+		if len(parts) >= 2 {
+			repoPath = strings.Trim(parts[1], "'")
+			gitCommand = "git-upload-pack"
+		}
+	} else if strings.HasPrefix(command, "git-receive-pack") {
+		parts := strings.SplitN(command, "'", 3)
+		if len(parts) >= 2 {
+			repoPath = strings.Trim(parts[1], "'")
+			gitCommand = "git-receive-pack"
+		}
+	} else if strings.HasPrefix(command, "git ") {
+		// Handle 'git' commands
+		parts := strings.Fields(command)
+		if len(parts) >= 3 {
+			gitCommand = parts[1]
+			repoPath = parts[2]
+		}
+	}
+
+	if repoPath == "" || gitCommand == "" {
+		fmt.Fprintf(channel.Stderr(), "Invalid Git command format\n")
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
 
-	gitOp := parts[0]
-	repoArg := strings.Trim(parts[1], "'\"")
-	repoPath := strings.TrimPrefix(repoArg, "/")
-	repoPath = strings.TrimSuffix(repoPath, ".git")
+	// Clean up the repository path
+	repoPath = strings.TrimPrefix(repoPath, "/")
 	
-	// Split owner and repository name
-	pathParts := strings.Split(repoPath, "/")
-	if len(pathParts) < 2 {
-		fmt.Fprintf(channel, "Invalid repository path format\n")
+	// Map the repository path to the actual filesystem path
+	// Format: username/reponame
+	parts := strings.SplitN(repoPath, "/", 2)
+	if len(parts) != 2 {
+		fmt.Fprintf(channel.Stderr(), "Invalid repository path: %s\n", repoPath)
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
+
+	repoOwner := parts[0]
+	repoName := parts[1]
 	
-	ownerName := pathParts[0]
-	repoName := pathParts[1]
+	// Construct the filesystem path to the repository
+	fsRepoPath := filepath.Join("repositories", repoOwner, repoName)
 	
-	// Get the owner of the repository
-	owner, err := models.GetUserByUsername(ownerName)
-	if err != nil {
-		log.Printf("Error fetching repository owner: %v", err)
-		fmt.Fprintf(channel, "Error accessing repository\n")
+	// Check if the repository exists
+	if _, err := os.Stat(fsRepoPath); os.IsNotExist(err) {
+		fmt.Fprintf(channel.Stderr(), "Repository not found: %s/%s\n", repoOwner, repoName)
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
-	
-	if owner == nil {
-		fmt.Fprintf(channel, "Repository not found\n")
-		return
-	}
-	
-	// Get the repository
-	repo, err := models.GetRepositoryByOwnerAndName(owner.ID, repoName)
-	if err != nil {
-		log.Printf("Error fetching repository: %v", err)
-		fmt.Fprintf(channel, "Error accessing repository\n")
-		return
-	}
-	
-	if repo == nil {
-		fmt.Fprintf(channel, "Repository not found\n")
-		return
-	}
-	
-	// Check repository access permissions
-	if username != owner.Username {
-		// Check if this user is a collaborator
-		// For now, only owners can access
-		fmt.Fprintf(channel, "Access denied to repository\n")
-		return
-	}
-	
-	// Get the filesystem path for the repository
-	repoFilesystemPath := utils.GetRepositoryPath(owner.ID, repoName)
 	
 	// Execute the Git command
-	cmd := exec.Command(gitOp, repoFilesystemPath)
-	cmd.Env = os.Environ()
+	log.Printf("Executing %s on %s", gitCommand, fsRepoPath)
 	
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		log.Printf("Error creating stdin pipe: %v", err)
-		fmt.Fprintf(channel, "Internal error\n")
-		return
-	}
+	// Create the command
+	cmd := exec.Command(gitCommand, fsRepoPath)
 	
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Printf("Error creating stdout pipe: %v", err)
-		fmt.Fprintf(channel, "Internal error\n")
-		return
-	}
-	
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		log.Printf("Error creating stderr pipe: %v", err)
-		fmt.Fprintf(channel, "Internal error\n")
-		return
-	}
+	// Set up pipes for stdin, stdout, stderr
+	stdin, _ := cmd.StdinPipe()
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
 	
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		log.Printf("Error starting Git command: %v", err)
-		fmt.Fprintf(channel, "Internal error\n")
+		log.Printf("Failed to start Git command: %v", err)
+		fmt.Fprintf(channel.Stderr(), "Failed to execute Git command: %v\n", err)
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
 	
-	// Connect pipes
+	// Copy data between SSH channel and command pipes
 	go func() {
 		io.Copy(stdin, channel)
 		stdin.Close()
@@ -265,6 +248,18 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 func (s *Server) authPublicKey(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 	// Generate fingerprint for the key
 	fingerprint := ssh.FingerprintSHA256(key)
+	log.Printf("Attempting authentication with key: %s", fingerprint)
+	
+	// Debug: Log all SSH keys in the database
+	keys, err := models.GetAllSSHKeys()
+	if err != nil {
+		log.Printf("Error retrieving all SSH keys: %v", err)
+	} else {
+		log.Printf("All SSH keys in database:")
+		for _, k := range keys {
+			log.Printf("  Key: %s, Fingerprint: %s, User: %s", k.Name, k.Fingerprint, k.UserID)
+		}
+	}
 	
 	// Find the user with this SSH key
 	user, err := models.GetUserBySSHKey(fingerprint)
@@ -306,7 +301,7 @@ func loadHostKey(path string) (ssh.Signer, error) {
 
 // generateHostKey creates a new SSH host key
 func generateHostKey(path string) error {
-	// Ensure the directory exists
+	// Create the directory if it doesn't exist
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create host key directory: %w", err)
@@ -314,9 +309,8 @@ func generateHostKey(path string) error {
 	
 	// Generate the key using ssh-keygen
 	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-f", path, "-N", "")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to generate host key: %w\nOutput: %s", err, string(output))
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to generate host key: %w", err)
 	}
 	
 	// Set restrictive permissions
@@ -351,5 +345,6 @@ func ParsePublicKey(keyData string) (string, error) {
 	
 	// Generate fingerprint
 	fingerprint := ssh.FingerprintSHA256(pubKey)
+	log.Printf("Parsed public key with fingerprint: %s", fingerprint)
 	return fingerprint, nil
 }

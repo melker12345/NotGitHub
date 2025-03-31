@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './api';
 
 const sshKeyService = {
@@ -16,8 +17,13 @@ const sshKeyService = {
    * @returns {Promise} - Promise with the list of SSH keys
    */
   getKeys: async () => {
-    const response = await api.get('/ssh-keys');
-    return response.data;
+    try {
+      const response = await api.get('/ssh-keys');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching SSH keys:', error);
+      throw error;
+    }
   },
 
   /**

@@ -10,6 +10,7 @@ import RepositorySettingsPage from './pages/RepositorySettingsPage'
 import RepositoryBrowserPage from './pages/RepositoryBrowserPage'
 import NewRepositoryPage from './pages/NewRepositoryPage'
 import SSHKeysPage from './pages/SSHKeysPage'
+import WelcomePage from './pages/WelcomePage'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,7 +48,13 @@ function App() {
         <Navbar isAuthenticated={isAuthenticated} user={user} onLogout={logout} />
         <main className="flex-grow container mx-auto px-4 py-8">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={
+              isAuthenticated ? (
+                <Navigate to="/repositories" />
+              ) : (
+                <WelcomePage />
+              )
+            } />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/repositories" element={<HomePage />} />
@@ -75,7 +82,7 @@ function App() {
             {/* User profile and settings routes */}
             <Route path="/profile" element={<HomePage />} />
             <Route path="/settings" element={<HomePage />} />
-            <Route path="/ssh-keys" element={
+            <Route path="/profile/ssh-keys" element={
               <ProtectedRoute>
                 <SSHKeysPage />
               </ProtectedRoute>
