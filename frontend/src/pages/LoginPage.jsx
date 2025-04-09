@@ -26,10 +26,11 @@ function LoginPage() {
       
       // Store the token and user info in localStorage
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('authToken', response.data.token); // Also set the authToken for consistency
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      // Redirect to home page
-      navigate('/');
+      // Force a page reload to update the authentication state
+      window.location.href = '/';
     } catch (err) {
       console.error('Login error:', err);
       setError(

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github-clone/models"
@@ -86,21 +87,26 @@ func DeleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	// Get the SSH key ID from the URL
 	vars := mux.Vars(r)
 	keyID := vars["id"]
+	
+	log.Printf("Attempting to delete SSH key with ID: %s for user ID: %s", keyID, userID)
 
 	// Get the key to verify ownership
 	key, err := models.GetSSHKeyByID(keyID)
 	if err != nil {
+		log.Printf("Error retrieving SSH key: %v", err)
 		http.Error(w, "Failed to retrieve SSH key", http.StatusInternalServerError)
 		return
 	}
 
 	if key == nil {
+		log.Printf("SSH key with ID %s not found", keyID)
 		http.Error(w, "SSH key not found", http.StatusNotFound)
 		return
 	}
 
 	// Check if user is the owner
 	if key.UserID != userID {
+		log.Printf("User %s attempted to delete SSH key %s owned by user %s", userID, keyID, key.UserID)
 		http.Error(w, "You don't have permission to delete this SSH key", http.StatusForbidden)
 		return
 	}
@@ -108,10 +114,12 @@ func DeleteSSHKey(w http.ResponseWriter, r *http.Request) {
 	// Delete the key
 	err = models.DeleteSSHKey(keyID)
 	if err != nil {
+		log.Printf("Error deleting SSH key: %v", err)
 		http.Error(w, "Failed to delete SSH key: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Successfully deleted SSH key with ID: %s", keyID)
 	// Return success response
 	w.WriteHeader(http.StatusNoContent)
 }

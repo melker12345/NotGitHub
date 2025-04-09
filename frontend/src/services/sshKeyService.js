@@ -8,8 +8,13 @@ const sshKeyService = {
    * @returns {Promise} - Promise with the created key data
    */
   addKey: async (keyData) => {
-    const response = await api.post('/ssh-keys', keyData);
-    return response.data;
+    try {
+      const response = await api.post('/ssh-keys', keyData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding SSH key:', error);
+      throw error;
+    }
   },
 
   /**
@@ -32,8 +37,15 @@ const sshKeyService = {
    * @returns {Promise} - Promise with the response
    */
   deleteKey: async (id) => {
-    const response = await api.delete(`/ssh-keys/${id}`);
-    return response.data;
+    try {
+      // Use explicit URL to ensure correct endpoint
+      await api.delete(`/ssh-keys/${id}`);
+      // Return success even if no content (204 response)
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting SSH key:', error);
+      throw error;
+    }
   }
 };
 

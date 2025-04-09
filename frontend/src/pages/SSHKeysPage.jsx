@@ -57,8 +57,11 @@ function SSHKeysPage() {
 
   const handleDeleteKey = async (id) => {
     try {
+      setError(''); // Clear any previous errors
       await sshKeyService.deleteKey(id);
       setSuccessMessage('SSH key deleted successfully');
+      
+      // Refresh the list of keys after deletion
       fetchKeys();
       
       // Clear success message after 3 seconds
@@ -67,7 +70,11 @@ function SSHKeysPage() {
       }, 3000);
     } catch (err) {
       console.error('Error deleting SSH key:', err);
-      setError('Failed to delete SSH key');
+      if (err.response && err.response.status === 404) {
+        setError('SSH key not found. It may have been already deleted.');
+      } else {
+        setError('Failed to delete SSH key. Please try again.');
+      }
     }
   };
 
@@ -199,10 +206,11 @@ function SSHKeysPage() {
             <li>On macOS/Linux: <code>~/.ssh/id_rsa.pub</code></li>
           </ul>
           
-          <h3>Add Your Key</h3>
-          <p>
-            Copy the contents of your public key file and paste it in the form above.
-          </p>
+          <h3>Using SSH with Git</h3>
+          <p>To clone a repository using SSH:</p>
+          <div className="bg-gray-100 p-3 rounded-md font-mono text-sm">
+            git clone ssh://git@localhost:2222/username/repo.git
+          </div>
         </div>
       </div>
     </div>

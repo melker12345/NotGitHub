@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github-clone/models"
 
@@ -31,7 +31,18 @@ func NewServer(listenAddr string, hostKeyPath string) (*Server, error) {
 
 	// Set up server config
 	server.config = &ssh.ServerConfig{
+		// Only allow public key authentication
 		PublicKeyCallback: server.authPublicKey,
+		
+		// Disable other authentication methods
+		PasswordCallback:           nil,
+		KeyboardInteractiveCallback: nil,
+		
+		// Set banner message
+		BannerCallback: func(conn ssh.ConnMetadata) string {
+			log.Printf("SSH connection from %s@%s", conn.User(), conn.RemoteAddr())
+			return "GitHub Clone - SSH server\n"
+		},
 	}
 
 	// Load or generate host key
@@ -78,12 +89,19 @@ func (s *Server) Start() error {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
+	// Set a timeout for the handshake
+	timeoutConn := conn
+	timeoutConn.SetDeadline(time.Now().Add(30 * time.Second))
+
 	// Perform SSH handshake
-	sshConn, chans, reqs, err := ssh.NewServerConn(conn, s.config)
+	sshConn, chans, reqs, err := ssh.NewServerConn(timeoutConn, s.config)
 	if err != nil {
 		log.Printf("Failed to handshake: %v", err)
 		return
 	}
+
+	// Reset the timeout after successful handshake
+	timeoutConn.SetDeadline(time.Time{})
 
 	log.Printf("SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 	defer log.Printf("SSH connection closed from %s", sshConn.RemoteAddr())
@@ -106,7 +124,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 		// Get username from connection
 		username := sshConn.Permissions.Extensions["username"]
-		
+
 		// Handle channel requests (exec, shell, etc.)
 		go s.handleChannelRequests(channel, requests, username)
 	}
@@ -187,7 +205,7 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 
 	// Clean up the repository path
 	repoPath = strings.TrimPrefix(repoPath, "/")
-	
+
 	// Map the repository path to the actual filesystem path
 	// Format: username/reponame
 	parts := strings.SplitN(repoPath, "/", 2)
@@ -199,28 +217,28 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 
 	repoOwner := parts[0]
 	repoName := parts[1]
-	
+
 	// Construct the filesystem path to the repository
 	fsRepoPath := filepath.Join("repositories", repoOwner, repoName)
-	
+
 	// Check if the repository exists
 	if _, err := os.Stat(fsRepoPath); os.IsNotExist(err) {
 		fmt.Fprintf(channel.Stderr(), "Repository not found: %s/%s\n", repoOwner, repoName)
 		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
-	
+
 	// Execute the Git command
 	log.Printf("Executing %s on %s", gitCommand, fsRepoPath)
-	
+
 	// Create the command
 	cmd := exec.Command(gitCommand, fsRepoPath)
-	
+
 	// Set up pipes for stdin, stdout, stderr
 	stdin, _ := cmd.StdinPipe()
 	stdout, _ := cmd.StdoutPipe()
 	stderr, _ := cmd.StderrPipe()
-	
+
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		log.Printf("Failed to start Git command: %v", err)
@@ -228,16 +246,16 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
-	
+
 	// Copy data between SSH channel and command pipes
 	go func() {
 		io.Copy(stdin, channel)
 		stdin.Close()
 	}()
-	
+
 	go io.Copy(channel, stdout)
 	go io.Copy(channel.Stderr(), stderr)
-	
+
 	// Wait for the command to complete
 	if err := cmd.Wait(); err != nil {
 		log.Printf("Git command error: %v", err)
@@ -248,40 +266,64 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 func (s *Server) authPublicKey(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 	// Generate fingerprint for the key
 	fingerprint := ssh.FingerprintSHA256(key)
-	log.Printf("Attempting authentication with key: %s", fingerprint)
-	
-	// Debug: Log all SSH keys in the database
+	keyType := key.Type()
+	log.Printf("SSH AUTH: Key offered - User=%s, Type=%s, Fingerprint=%s",
+		conn.User(), keyType, fingerprint)
+
+	// Match keys by directly comparing fingerprints
 	keys, err := models.GetAllSSHKeys()
 	if err != nil {
-		log.Printf("Error retrieving all SSH keys: %v", err)
-	} else {
-		log.Printf("All SSH keys in database:")
-		for _, k := range keys {
-			log.Printf("  Key: %s, Fingerprint: %s, User: %s", k.Name, k.Fingerprint, k.UserID)
-		}
-	}
-	
-	// Find the user with this SSH key
-	user, err := models.GetUserBySSHKey(fingerprint)
-	if err != nil {
-		log.Printf("Error looking up SSH key: %v", err)
+		log.Printf("SSH AUTH ERROR: Database query failed: %v", err)
 		return nil, fmt.Errorf("server error")
 	}
+
+	log.Printf("SSH AUTH: Checking %d keys in database", len(keys))
 	
-	if user == nil {
-		log.Printf("Unknown SSH key: %s", fingerprint)
-		return nil, fmt.Errorf("unknown key")
+	// If no keys in database, fail early
+	if len(keys) == 0 {
+		log.Printf("SSH AUTH FAILED: No keys in database. Add a key through the web interface.")
+		return nil, fmt.Errorf("no keys in database")
 	}
-	
-	log.Printf("Authenticated user %s (ID: %s) with key %s", user.Username, user.ID, fingerprint)
-	
-	// Return permissions with username for later use
-	return &ssh.Permissions{
-		Extensions: map[string]string{
-			"username": user.Username,
-			"user_id":  user.ID,
-		},
-	}, nil
+
+	// Try direct matching with each key
+	for _, k := range keys {
+		log.Printf("SSH AUTH: Checking key '%s' (ID: %s)", k.Name, k.ID)
+		
+		// Parse the stored public key
+		parsedKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(k.PublicKey))
+		if err != nil {
+			log.Printf("SSH AUTH: Failed to parse stored key: %v", err)
+			continue
+		}
+		
+		// Get the fingerprint in the same format as the client key
+		storedFingerprint := ssh.FingerprintSHA256(parsedKey)
+		log.Printf("SSH AUTH: Comparing - Stored=%s vs Client=%s", storedFingerprint, fingerprint)
+		
+		// If fingerprints match, authentication succeeds
+		if storedFingerprint == fingerprint {
+			// Get the user associated with this key
+			user, err := models.GetUserByID(k.UserID)
+			if err != nil || user == nil {
+				log.Printf("SSH AUTH ERROR: Key matched but user lookup failed: %v", err)
+				return nil, fmt.Errorf("server error")
+			}
+			
+			log.Printf("SSH AUTH SUCCESS: User %s authenticated with key '%s'", user.Username, k.Name)
+			
+			// Return permissions with username for later use
+			return &ssh.Permissions{
+				Extensions: map[string]string{
+					"username": user.Username,
+					"user_id":  user.ID,
+				},
+			}, nil
+		}
+	}
+
+	// If we get here, no matching key was found
+	log.Printf("SSH AUTH FAILED: No matching key found for %s", fingerprint)
+	return nil, fmt.Errorf("unknown key")
 }
 
 // loadHostKey loads an SSH host key from a file
@@ -290,12 +332,12 @@ func loadHostKey(path string) (ssh.Signer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read host key: %w", err)
 	}
-	
+
 	key, err := ssh.ParsePrivateKey(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse host key: %w", err)
 	}
-	
+
 	return key, nil
 }
 
@@ -306,18 +348,18 @@ func generateHostKey(path string) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create host key directory: %w", err)
 	}
-	
+
 	// Generate the key using ssh-keygen
 	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-f", path, "-N", "")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to generate host key: %w", err)
 	}
-	
+
 	// Set restrictive permissions
 	if err := os.Chmod(path, 0600); err != nil {
 		return fmt.Errorf("failed to set host key permissions: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -325,26 +367,17 @@ func generateHostKey(path string) error {
 func ParsePublicKey(keyData string) (string, error) {
 	// Clean the key data (remove comments, extra spaces)
 	keyData = strings.TrimSpace(keyData)
-	parts := strings.Split(keyData, " ")
-	
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid SSH public key format")
-	}
-	
-	// Decode the key
-	keyBytes, err := base64.StdEncoding.DecodeString(parts[1])
+
+	// Use ssh.ParseAuthorizedKey which properly handles the standard format
+	pubKey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(keyData))
 	if err != nil {
-		return "", fmt.Errorf("failed to decode public key: %w", err)
-	}
-	
-	// Parse the key
-	pubKey, err := ssh.ParsePublicKey(keyBytes)
-	if err != nil {
+		log.Printf("Error parsing SSH key: %v", err)
 		return "", fmt.Errorf("failed to parse public key: %w", err)
 	}
-	
-	// Generate fingerprint
+
+	// Generate fingerprint using the same method as the authentication
 	fingerprint := ssh.FingerprintSHA256(pubKey)
 	log.Printf("Parsed public key with fingerprint: %s", fingerprint)
+	log.Printf("Public key type: %s", pubKey.Type())
 	return fingerprint, nil
 }
