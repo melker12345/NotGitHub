@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import repositoryService from '../services/repositoryService';
+import repositoryBrowserService from '../services/repositoryBrowserService';
+import FileBrowser from '../components/repositories/FileBrowser';
 
 function RepositoryDetailPage() {
   const { username, reponame } = useParams();
@@ -10,12 +12,25 @@ function RepositoryDetailPage() {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
+  const [hasFiles, setHasFiles] = useState(false);
 
   useEffect(() => {
     const fetchRepository = async () => {
       try {
+        setIsLoading(true);
         const data = await repositoryService.getRepositoryByPath(username, reponame);
         setRepository(data);
+        
+        // Check if repository has files
+        try {
+          const contents = await repositoryBrowserService.getContentsByPath(username, reponame);
+          // If we got contents and there are items, the repository has files
+          setHasFiles(Array.isArray(contents) && contents.length > 0);
+        } catch (contentErr) {
+          console.error('Error checking repository contents:', contentErr);
+          setHasFiles(false);
+        }
+        
         setError('');
       } catch (err) {
         console.error('Error fetching repository:', err);
@@ -203,14 +218,16 @@ function RepositoryDetailPage() {
             </button>
           </div>
           
-          <p className="mb-6">
-            Get started by creating a new file or uploading an existing file. We recommend every repository include a README, LICENSE, and .gitignore.
-          </p>
-          
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-medium mb-2">…or create a new repository on the command line</h4>
-              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+          {!hasFiles ? (
+            <>
+              <p className="mb-6">
+                Get started by creating a new file or uploading an existing file. We recommend every repository include a README, LICENSE, and .gitignore.
+              </p>
+              
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-medium mb-2">…or create a new repository on the command line</h4>
+                  <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
 {`echo "# ${repository.name}" >> README.md
 git init
 git add README.md
@@ -218,41 +235,52 @@ git commit -m "first commit"
 git branch -M main
 git remote add origin ${httpsCloneUrl}
 git push -u origin main`}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-2">…or push an existing repository from the command line</h4>
-              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">…or push an existing repository from the command line</h4>
+                  <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
 {`git remote add origin ${httpsCloneUrl}
 git branch -M main
 git push -u origin main`}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium mb-2">…or clone using SSH</h4>
-              <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">…or clone using SSH</h4>
+                  <div className="bg-gray-200 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
 {`git clone ${sshCloneUrl}
 cd ${repository.name}`}
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Don't forget to <Link to="/ssh-keys" className="text-blue-600 hover:underline">add your SSH key</Link> before using SSH to clone.
+                  </p>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-gray-600">
-                Don't forget to <Link to="/ssh-keys" className="text-blue-600 hover:underline">add your SSH key</Link> before using SSH to clone.
-              </p>
+            </>
+          ) : (
+            <div className="mt-6">
+              <h2 className="text-xl font-semibold mb-4">Repository Files</h2>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <FileBrowser username={username} reponame={reponame} />
+              </div>
             </div>
-          </div>
+          )}
           
-          <div className="mt-6 flex justify-center">
-            <Link
-              to={`/${username}/${reponame}/browser`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              Browse Repository Files
-            </Link>
-          </div>
+          {!hasFiles && (
+            <div className="mt-6 flex justify-center">
+              <Link
+                to={`/${username}/${reponame}/browser`}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                Browse Repository Files
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

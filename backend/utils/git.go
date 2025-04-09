@@ -64,6 +64,9 @@ func CreateRepositoryHooks(repoPath string) error {
 	hookContent := `#!/bin/sh
 # This hook is called after a successful push
 echo "Repository updated successfully!"
+
+# Make sure the hook exits with success (important for Git client)
+exit 0
 `
 	if err := os.WriteFile(hookPath, []byte(hookContent), 0755); err != nil {
 		return fmt.Errorf("failed to create post-receive hook: %w", err)

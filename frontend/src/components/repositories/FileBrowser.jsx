@@ -19,7 +19,7 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 };
 
-function FileBrowser() {
+function FileBrowser({ username: propUsername, reponame: propReponame }) {
   const [contents, setContents] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +27,10 @@ function FileBrowser() {
   const [searchParams] = useSearchParams();
   const [repository, setRepository] = useState(null);
   const currentPath = searchParams.get('path') || '';
-  const { username, reponame } = useParams();
+  // Use props if provided, otherwise fall back to URL params
+  const params = useParams();
+  const username = propUsername || params.username;
+  const reponame = propReponame || params.reponame;
   const navigate = useNavigate();
 
   // Fetch the repository name for display in breadcrumbs

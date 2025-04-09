@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github-clone/models"
@@ -60,8 +62,22 @@ func GetRepositoryContents(w http.ResponseWriter, r *http.Request) {
 		ref = "HEAD" // Default to HEAD
 	}
 
-	// Get the repository path on the filesystem
-	repoPath := utils.GetRepositoryPath(repo.OwnerID, repo.Name)
+	// Get the repository path on the filesystem using username-based path
+	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
+	if baseRepoPath == "" {
+		// Default to a subdirectory in the current working directory
+		dir, _ := os.Getwd()
+		baseRepoPath = filepath.Join(dir, "repositories")
+	}
+	
+	// Format Git repository path - username/repo.git
+	gitRepoName := repo.Name
+	if !strings.HasSuffix(gitRepoName, ".git") {
+		gitRepoName += ".git"
+	}
+	
+	// Use username-based path to match SSH server path structure
+	repoPath := filepath.Join(baseRepoPath, repo.Owner.Username, gitRepoName)
 
 	// Get the contents
 	contents, err := utils.GetRepositoryContents(repoPath, path, ref)
@@ -125,8 +141,22 @@ func GetFileContent(w http.ResponseWriter, r *http.Request) {
 		ref = "HEAD" // Default to HEAD
 	}
 
-	// Get the repository path on the filesystem
-	repoPath := utils.GetRepositoryPath(repo.OwnerID, repo.Name)
+	// Get the repository path on the filesystem using username-based path
+	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
+	if baseRepoPath == "" {
+		// Default to a subdirectory in the current working directory
+		dir, _ := os.Getwd()
+		baseRepoPath = filepath.Join(dir, "repositories")
+	}
+	
+	// Format Git repository path - username/repo.git
+	gitRepoName := repo.Name
+	if !strings.HasSuffix(gitRepoName, ".git") {
+		gitRepoName += ".git"
+	}
+	
+	// Use username-based path to match SSH server path structure
+	repoPath := filepath.Join(baseRepoPath, repo.Owner.Username, gitRepoName)
 
 	// Get the file content
 	fileEntry, err := utils.GetFileContent(repoPath, filePath, ref)
@@ -187,8 +217,22 @@ func GetCommitHistory(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get the repository path on the filesystem
-	repoPath := utils.GetRepositoryPath(repo.OwnerID, repo.Name)
+	// Get the repository path on the filesystem using username-based path
+	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
+	if baseRepoPath == "" {
+		// Default to a subdirectory in the current working directory
+		dir, _ := os.Getwd()
+		baseRepoPath = filepath.Join(dir, "repositories")
+	}
+	
+	// Format Git repository path - username/repo.git
+	gitRepoName := repo.Name
+	if !strings.HasSuffix(gitRepoName, ".git") {
+		gitRepoName += ".git"
+	}
+	
+	// Use username-based path to match SSH server path structure
+	repoPath := filepath.Join(baseRepoPath, repo.Owner.Username, gitRepoName)
 
 	// Get the commit history
 	commits, err := utils.GetCommitHistory(repoPath, ref, limit)

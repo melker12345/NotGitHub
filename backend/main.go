@@ -71,6 +71,8 @@ func main() {
 	router.HandleFunc("/api/{username}/{reponame}/contents", handlers.GetRepositoryContentsByUsername).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/{username}/{reponame}/file", handlers.GetFileContentByUsername).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/{username}/{reponame}/commits", handlers.GetCommitHistoryByUsername).Methods("GET", "OPTIONS")
+	// Debug endpoint
+	router.HandleFunc("/api/{username}/{reponame}/debug", handlers.DebugRepositoryPath).Methods("GET", "OPTIONS")
 
 	// Repository listing and creation endpoints
 	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET", "OPTIONS")

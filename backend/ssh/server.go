@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github-clone/models"
@@ -266,18 +267,42 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 		return
 	}
 
+	// Set up a wait group to coordinate goroutines
+	var wg sync.WaitGroup
+	
 	// Copy data between SSH channel and command pipes
+	wg.Add(3)
+	
+	// Handle stdin copying
 	go func() {
+		defer wg.Done()
 		io.Copy(stdin, channel)
 		stdin.Close()
 	}()
 
-	go io.Copy(channel, stdout)
-	go io.Copy(channel.Stderr(), stderr)
+	// Handle stdout copying
+	go func() {
+		defer wg.Done()
+		io.Copy(channel, stdout)
+	}()
+	
+	// Handle stderr copying
+	go func() {
+		defer wg.Done()
+		io.Copy(channel.Stderr(), stderr)
+	}()
 
+	// Wait for all I/O to complete
+	wg.Wait()
+	
 	// Wait for the command to complete
 	if err := cmd.Wait(); err != nil {
 		log.Printf("Git command error: %v", err)
+		// Send exit status 1 to indicate error
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
+	} else {
+		// Send exit status 0 to indicate success
+		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 	}
 }
 
