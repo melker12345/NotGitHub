@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // InitializeGitRepository initializes a bare Git repository at the specified path
@@ -40,8 +41,14 @@ func GetRepositoryPath(ownerID, repoName string) string {
 	// Ensure the base directory exists
 	os.MkdirAll(baseRepoPath, 0755)
 	
-	// Construct the repository path
-	return filepath.Join(baseRepoPath, ownerID, repoName+".git")
+	// Format repository names consistently
+	if !strings.HasSuffix(repoName, ".git") {
+		repoName = repoName + ".git"
+	}
+	
+	// Construct the repository path using ownerID
+	// This approach uses ownerID to maintain backward compatibility
+	return filepath.Join(baseRepoPath, ownerID, repoName)
 }
 
 // CreateRepositoryHooks sets up the necessary Git hooks for a repository

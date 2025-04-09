@@ -218,15 +218,34 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 	repoOwner := parts[0]
 	repoName := parts[1]
 
-	// Construct the filesystem path to the repository
-	fsRepoPath := filepath.Join("repositories", repoOwner, repoName)
+	// Get the base repository path
+	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
+	if baseRepoPath == "" {
+		// Default to a subdirectory in the current working directory
+		dir, _ := os.Getwd()
+		baseRepoPath = filepath.Join(dir, "repositories")
+	}
 
+	log.Printf("Looking for repository: %s/%s", repoOwner, repoName)
+	
+	// Format Git repository path - username/repo.git
+	gitRepoName := repoName
+	if !strings.HasSuffix(gitRepoName, ".git") {
+		gitRepoName += ".git"
+	}
+	
+	// Construct the full filesystem path to the repository
+	fsRepoPath := filepath.Join(baseRepoPath, repoOwner, gitRepoName)
+	
 	// Check if the repository exists
 	if _, err := os.Stat(fsRepoPath); os.IsNotExist(err) {
+		// Repository doesn't exist
 		fmt.Fprintf(channel.Stderr(), "Repository not found: %s/%s\n", repoOwner, repoName)
 		channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
 		return
 	}
+	
+	log.Printf("Found repository at: %s", fsRepoPath)
 
 	// Execute the Git command
 	log.Printf("Executing %s on %s", gitCommand, fsRepoPath)

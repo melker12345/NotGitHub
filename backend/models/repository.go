@@ -3,6 +3,10 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github-clone/config"
@@ -47,9 +51,38 @@ func CreateRepository(ownerID string, input RepositoryInput) (*Repository, error
 		UpdatedAt:   now,
 	}
 	
-	// Create repository directory structure and initialize Git repository
-	repoPath := utils.GetRepositoryPath(ownerID, input.Name)
-	err := utils.InitializeGitRepository(repoPath)
+	// Get the username for this owner ID for SSH compatibility
+	owner, err := GetUserByID(ownerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repository owner: %w", err)
+	}
+	
+	// Create repository directory structure with username-based path
+	// Ensure repository name has .git suffix
+	repoName := input.Name
+	if !strings.HasSuffix(repoName, ".git") {
+		repoName = repoName + ".git"
+	}
+	
+	// Get the base repositories directory
+	baseRepoPath := os.Getenv("REPOSITORIES_PATH")
+	if baseRepoPath == "" {
+		// Default to a subdirectory in the current working directory
+		dir, _ := os.Getwd()
+		baseRepoPath = filepath.Join(dir, "repositories")
+	}
+	
+	// Ensure the base directory and user directory exist
+	userRepoPath := filepath.Join(baseRepoPath, owner.Username)
+	if err := os.MkdirAll(userRepoPath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create user repository directory: %w", err)
+	}
+	
+	// Full path to the repository
+	repoPath := filepath.Join(userRepoPath, repoName)
+	
+	// Initialize the Git repository
+	err = utils.InitializeGitRepository(repoPath)
 	if err != nil {
 		return nil, err
 	}
