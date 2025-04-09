@@ -234,3 +234,26 @@ func getUserIDFromRequest(r *http.Request) (string, error) {
 
 	return claims.UserID, nil
 }
+
+// getUserIDOptional extracts the user ID from the request token if available
+// Returns empty string instead of error if no token is provided
+func getUserIDOptional(r *http.Request) string {
+	// Get the token from the Authorization header
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		return "" // No error, just no user ID
+	}
+
+	// Remove "Bearer " prefix if present
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+
+	// Validate the token and extract the claims
+	claims, err := auth.ValidateToken(tokenString)
+	if err != nil {
+		return "" // Invalid token, but we don't return an error
+	}
+
+	return claims.UserID
+}

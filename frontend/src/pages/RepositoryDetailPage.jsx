@@ -24,6 +24,7 @@ function RepositoryDetailPage() {
         // Check if repository has files
         try {
           const contents = await repositoryBrowserService.getContentsByPath(username, reponame);
+          console.log('Repository contents:', contents);
           // If we got contents and there are items, the repository has files
           setHasFiles(Array.isArray(contents) && contents.length > 0);
         } catch (contentErr) {
@@ -268,19 +269,7 @@ cd ${repository.name}`}
             </div>
           )}
           
-          {!hasFiles && (
-            <div className="mt-6 flex justify-center">
-              <Link
-                to={`/${username}/${reponame}/browser`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                Browse Repository Files
-              </Link>
-            </div>
-          )}
+          {/* Always show repository files, whether empty or not */}
         </div>
       </div>
 

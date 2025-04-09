@@ -19,6 +19,9 @@ func DebugRepositoryPath(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	username := vars["username"]
 	repoName := vars["reponame"]
+	
+	// Get the authenticated user ID without requiring authentication
+	userID := getUserIDOptional(r)
 
 	// Get repository info from database
 	repo, err := models.GetRepositoryByUsernameAndName(username, repoName)
@@ -29,6 +32,12 @@ func DebugRepositoryPath(w http.ResponseWriter, r *http.Request) {
 
 	if repo == nil {
 		http.Error(w, "Repository not found in database", http.StatusNotFound)
+		return
+	}
+	
+	// Check if user has access to this repository
+	if repo.OwnerID != userID && !repo.IsPublic {
+		http.Error(w, "You don't have access to this repository", http.StatusForbidden)
 		return
 	}
 

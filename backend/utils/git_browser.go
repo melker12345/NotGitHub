@@ -54,64 +54,165 @@ func GetRepositoryContents(repoPath, relativePath, ref string) ([]*FileEntry, er
 		return nil, fmt.Errorf("repository does not exist")
 	}
 
-	// List files in the directory using git ls-tree
-	cmd := exec.Command("git", "-C", repoPath, "ls-tree", "-l", ref, relativePath)
+	// For root directory, use ls-tree with -r to list all files recursively
+	var cmd *exec.Cmd
+	if relativePath == "." {
+		// Use --name-only to just get paths for the root directory to get top-level entries
+		cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref)
+	} else {
+		cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref, relativePath)
+	}
+	
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	if err != nil {
-		return nil, fmt.Errorf("error listing files: %v - %s", err, stderr.String())
+
+	// If there's an error or empty output, try different approach for root dir
+	if (err != nil || stdout.String() == "") && relativePath == "." {
+		// Try direct ls-files approach for bare repos or repos with just files
+		allFilesCmd := exec.Command("git", "-C", repoPath, "ls-files")
+		allFilesCmd.Stdout = &stdout
+		allFilesCmd.Stderr = &stderr
+		err = allFilesCmd.Run()
+		
+		if err != nil || stdout.String() == "" {
+			// Check if it's a valid but empty repo
+			validCmd := exec.Command("git", "-C", repoPath, "rev-parse", "--is-inside-work-tree")
+			if validCmd.Run() != nil {
+				return nil, fmt.Errorf("error listing files: %v - %s", err, stderr.String())
+			}
+			return []*FileEntry{}, nil
+		}
+		
+		// Create a mapping of directories
+		entries := make([]*FileEntry, 0)
+		dirMap := make(map[string]bool)
+		
+		// Process each file and extract top-level directories
+		for _, line := range strings.Split(stdout.String(), "\n") {
+			if line == "" {
+				continue
+			}
+			
+			// Split the path to get the top-level directory or file
+			parts := strings.SplitN(line, "/", 2)
+			topLevel := parts[0]
+			
+			if len(parts) > 1 {
+				// This is a file in a directory, just track the directory
+				dirMap[topLevel] = true
+			} else {
+				// This is a file in the root
+				entries = append(entries, &FileEntry{
+					Name: topLevel,
+					Path: topLevel,
+					Type: "file",
+				})
+			}
+		}
+		
+		// Add all the directories we found
+		for dir := range dirMap {
+			entries = append(entries, &FileEntry{
+				Name: dir,
+				Path: dir,
+				Type: "dir",
+			})
+		}
+		
+		return entries, nil
+	} else if err != nil || stdout.String() == "" {
+		// If not root directory and not found, return empty
+		return []*FileEntry{}, nil
 	}
 
-	// Parse the output
+	// Parse the output for ls-tree format
 	entries := make([]*FileEntry, 0)
 	lines := strings.Split(stdout.String(), "\n")
+
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
 
-		// Parse git ls-tree output
-		// Format: <mode> <type> <object> <size> <path>
-		parts := strings.Fields(line)
-		if len(parts) < 5 {
+		// Format for ls-tree output: <mode> <type> <object> <TAB> <file>
+		// First, split by tab to separate the metadata from filename
+		parts := strings.SplitN(line, "\t", 2)
+		var name string
+		if len(parts) == 2 {
+			// We have the tab format
+			name = parts[1]
+			parts = strings.Fields(parts[0]) // Now parse the metadata part
+		} else {
+			// Try regular space-separated format
+			parts = strings.Fields(line)
+			if len(parts) < 4 {
+				continue
+			}
+			name = strings.Join(parts[3:], " ")
+			parts = parts[:3] // Keep just the metadata
+		}
+
+		if len(parts) < 3 {
 			continue
 		}
 
 		mode := parts[0]
-		entryType := parts[1]
+		entryTypeStr := parts[1] // "blob" for file, "tree" for directory
 		sha := parts[2]
-		size := parts[3]
-		name := strings.Join(parts[4:], " ")
-		path := filepath.Join(relativePath, name)
 		
-		// Determine entry type
-		var entryTypeStr string
-		if entryType == "blob" {
-			entryTypeStr = "file"
-		} else if entryType == "tree" {
-			entryTypeStr = "dir"
-		} else if entryType == "commit" {
-			entryTypeStr = "submodule"
+		// Convert Git entry type to our type
+		var entryType string
+		if entryTypeStr == "blob" {
+			entryType = "file"
+		} else if entryTypeStr == "tree" {
+			entryType = "dir"
 		} else {
-			entryTypeStr = "unknown"
+			// Skip unknown types
+			continue
+		}
+		
+		// For files, get the size
+		size := int64(0)
+		if entryType == "file" {
+			sizeCmd := exec.Command("git", "-C", repoPath, "cat-file", "-s", sha)
+			sizeOutput, err := sizeCmd.Output()
+			if err == nil {
+				fmt.Sscanf(string(sizeOutput), "%d", &size)
+			}
 		}
 
-		// Get last commit for this file
-		lastCommit, _ := GetLastCommitForFile(repoPath, path, ref)
+		// Get the file path to use for commit lookup and display
+		filePath := name
+		if relativePath != "." {
+			filePath = filepath.Join(relativePath, name)
+		}
 
-		sizeInt := int64(0)
-		fmt.Sscanf(size, "%d", &sizeInt)
+		// Get last commit for this file but skip on large repositories to improve performance
+		var lastCommit *Commit
+		// Only get the last commit for top-level directories or files
+		if !strings.Contains(filePath, "/") || strings.Count(filePath, "/") == 1 {
+			lastCommit, _ = GetLastCommitForFile(repoPath, filePath, ref)
+		}
 
+		// Determine content type for files
+		var contentType string
+		if entryType == "file" {
+			fileExt := strings.ToLower(filepath.Ext(name))
+			contentType = determineContentType(fileExt)
+		}
+
+		// Create the entry
 		entry := &FileEntry{
-			Name:       name,
-			Path:       path,
-			Type:       entryTypeStr,
-			Size:       sizeInt,
-			Mode:       mode,
-			SHA:        sha,
-			LastCommit: lastCommit,
+			Name:        name,
+			Path:        filePath,
+			Type:        entryType,
+			Size:        size, 
+			Mode:        mode,
+			SHA:         sha,
+			LastCommit:  lastCommit,
+			ContentType: contentType,
 		}
 
 		entries = append(entries, entry)
@@ -129,6 +230,20 @@ func GetFileContent(repoPath, filePath, ref string) (*FileEntry, error) {
 	// Check if the repository exists
 	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("repository does not exist")
+	}
+	
+	// First, check if this path is a directory
+	checkTypeCmd := exec.Command("git", "-C", repoPath, "ls-tree", ref, filePath)
+	var typeOut, typeErr bytes.Buffer
+	checkTypeCmd.Stdout = &typeOut
+	checkTypeCmd.Stderr = &typeErr
+	checkTypeCmd.Run() // Ignore error since we're just checking
+	
+	// Parse the output to check if it's a directory
+	typeOutput := typeOut.String()
+	if strings.Contains(typeOutput, "tree") || strings.Count(typeOutput, "\n") > 1 {
+		// This indicates a directory, not a file
+		return nil, fmt.Errorf("cannot get file content for a directory: %s", filePath)
 	}
 
 	// Get file metadata

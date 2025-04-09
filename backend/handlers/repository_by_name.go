@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -50,9 +51,12 @@ func GetRepositoryContentsByUsername(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	username := vars["username"]
 	repoName := vars["reponame"]
+	
+	// Log the request for debugging
+	fmt.Printf("Accessing repo contents: %s/%s\n", username, repoName)
 
-	// Get the authenticated user ID, but don't require it
-	userID, _ := getUserIDFromRequest(r)
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByUsernameAndName(username, repoName)
@@ -123,8 +127,8 @@ func GetFileContentByUsername(w http.ResponseWriter, r *http.Request) {
 	username := vars["username"]
 	repoName := vars["reponame"]
 
-	// Get the authenticated user ID, but don't require it
-	userID, _ := getUserIDFromRequest(r)
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByUsernameAndName(username, repoName)
@@ -196,8 +200,8 @@ func GetCommitHistoryByUsername(w http.ResponseWriter, r *http.Request) {
 	username := vars["username"]
 	repoName := vars["reponame"]
 
-	// Get the authenticated user ID, but don't require it
-	userID, _ := getUserIDFromRequest(r)
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByUsernameAndName(username, repoName)

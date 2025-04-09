@@ -19,12 +19,8 @@ func GetRepositoryContents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	repoID := vars["id"]
 
-	// Get the authenticated user ID
-	userID, err := getUserIDFromRequest(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByID(repoID)
@@ -39,9 +35,8 @@ func GetRepositoryContents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user has access to this repository
-	if repo.OwnerID != userID {
-		// For now, we'll only allow the owner to access the repository
-		// Later, we could check for collaborators
+	if repo.OwnerID != userID && !repo.IsPublic {
+		// Only allow access if the user is the owner or the repository is public
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
@@ -97,12 +92,8 @@ func GetFileContent(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	repoID := vars["id"]
 
-	// Get the authenticated user ID
-	userID, err := getUserIDFromRequest(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByID(repoID)
@@ -117,9 +108,8 @@ func GetFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user has access to this repository
-	if repo.OwnerID != userID {
-		// For now, we'll only allow the owner to access the repository
-		// Later, we could check for collaborators
+	if repo.OwnerID != userID && !repo.IsPublic {
+		// Only allow access if the user is the owner or the repository is public
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
@@ -176,12 +166,8 @@ func GetCommitHistory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	repoID := vars["id"]
 
-	// Get the authenticated user ID
-	userID, err := getUserIDFromRequest(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	// Get the authenticated user ID, but don't require it for public repositories
+	userID := getUserIDOptional(r)
 
 	// Get the repository
 	repo, err := models.GetRepositoryByID(repoID)
@@ -196,9 +182,8 @@ func GetCommitHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user has access to this repository
-	if repo.OwnerID != userID {
-		// For now, we'll only allow the owner to access the repository
-		// Later, we could check for collaborators
+	if repo.OwnerID != userID && !repo.IsPublic {
+		// Only allow access if the user is the owner or the repository is public
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
