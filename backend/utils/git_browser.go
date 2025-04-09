@@ -298,6 +298,13 @@ func GetFileContent(repoPath, filePath, ref string) (*FileEntry, error) {
 	sizeInt := int64(0)
 	fmt.Sscanf(size, "%d", &sizeInt)
 
+	// Try to clean the content string for better display
+	content := stdout.String()
+	
+	// Remove common BOM and control characters that might appear
+	content = strings.ReplaceAll(content, "\uFEFF", "") // BOM
+	content = strings.ReplaceAll(content, "\u0000", "") // Null byte
+
 	return &FileEntry{
 		Name:        name,
 		Path:        filePath,
@@ -305,7 +312,7 @@ func GetFileContent(repoPath, filePath, ref string) (*FileEntry, error) {
 		Size:        sizeInt,
 		Mode:        mode,
 		SHA:         sha,
-		Content:     stdout.String(),
+		Content:     content,
 		Encoding:    "utf-8", // We're assuming UTF-8 encoding
 		LastCommit:  lastCommit,
 		ContentType: contentType,

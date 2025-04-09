@@ -47,57 +47,58 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
     fetchRepository();
   }, [username, reponame]);
 
-  // Fetch repository contents
-  useEffect(() => {
-    const fetchContents = async () => {
-      try {
-        setIsLoading(true);
-        setError('');
-        
-        console.log(`Fetching contents for ${username}/${reponame}, path: ${currentPath}`);
-        // Fetch contents using GitHub-style URL pattern
-        const response = await repositoryBrowserService.getContentsByPath(username, reponame, currentPath);
-        
-        console.log('Repository contents response:', response);
-        
-        if (response && Array.isArray(response)) {
-          // Ensure each item has a unique Path property for React keys and file operations
-          const processedContents = response.map(item => {
-            // Make a copy of the item to avoid modifying the original
-            const processedItem = { ...item };
-            
-            // Check for lowercase path property (from API)
-            // If we have a lowercase path property from the API, copy it to Path for consistency
-            if (processedItem.path && (!processedItem.Path || processedItem.Path === '')) {
-              processedItem.Path = processedItem.path;
-            } 
-            // If Path is still missing, construct it from Name
-            else if (!processedItem.Path || processedItem.Path === '') {
-              const pathPrefix = currentPath ? currentPath + '/' : '';
-              processedItem.Path = pathPrefix + processedItem.Name;
-            }
-            
-            // Log each processed item for debugging
-            console.log('Processed item:', processedItem);
-            
-            return processedItem;
-          });
+  // Function to fetch repository contents
+  const fetchContents = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      console.log(`Fetching contents for ${username}/${reponame}, path: ${currentPath}`);
+      // Fetch contents using GitHub-style URL pattern
+      const response = await repositoryBrowserService.getContentsByPath(username, reponame, currentPath);
+      
+      console.log('Repository contents response:', response);
+      
+      if (response && Array.isArray(response)) {
+        // Ensure each item has a unique Path property for React keys and file operations
+        const processedContents = response.map(item => {
+          // Make a copy of the item to avoid modifying the original
+          const processedItem = { ...item };
           
-          console.log('Processed contents:', processedContents);
-          setContents(processedContents);
-        } else {
-          console.error('Invalid response format:', response);
-          throw new Error('Invalid response format');
-        }
-      } catch (err) {
-        console.error('Error fetching contents:', err);
-        setError('Failed to load repository contents: ' + (err.message || 'Unknown error'));
-        setContents([]);
-      } finally {
-        setIsLoading(false);
+          // Check for lowercase path property (from API)
+          // If we have a lowercase path property from the API, copy it to Path for consistency
+          if (processedItem.path && (!processedItem.Path || processedItem.Path === '')) {
+            processedItem.Path = processedItem.path;
+          } 
+          // If Path is still missing, construct it from Name
+          else if (!processedItem.Path || processedItem.Path === '') {
+            const pathPrefix = currentPath ? currentPath + '/' : '';
+            processedItem.Path = pathPrefix + (processedItem.name || processedItem.Name);
+          }
+          
+          // Log each processed item for debugging
+          console.log('Processed item:', processedItem);
+          
+          return processedItem;
+        });
+        
+        console.log('Processed contents:', processedContents);
+        setContents(processedContents);
+      } else {
+        console.error('Invalid response format:', response);
+        throw new Error('Invalid response format');
       }
-    };
+    } catch (err) {
+      console.error('Error fetching contents:', err);
+      setError('Failed to load repository contents: ' + (err.message || 'Unknown error'));
+      setContents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Call fetchContents when component mounts or path changes
+  useEffect(() => {
     if (username && reponame) {
       fetchContents();
     }
@@ -105,7 +106,55 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
 
   // Handle directory navigation
   const handleNavigate = (path) => {
-    navigate(`/${username}/${reponame}/browser?path=${encodeURIComponent(path)}`);
+    // Ensure we're using the clean path without redundancy
+    // Clean the path to avoid double paths like frost\frost
+    const cleanPath = path.replace(/\\/g, '/'); // Replace backslashes with forward slashes
+    
+    console.log('Navigating to directory with clean path:', cleanPath);
+    
+    // First update the URL with the clean path
+    navigate(`/${username}/${reponame}/browser?path=${encodeURIComponent(cleanPath)}`);
+    
+    // Also manually fetch contents for the directory
+    setTimeout(() => {
+      console.log('Fetching contents for path:', cleanPath);
+      
+      // Directly fetch the contents with the clean path
+      repositoryBrowserService.getContentsByPath(username, reponame, cleanPath)
+        .then(response => {
+          console.log('Directory contents response:', response);
+          if (response && Array.isArray(response)) {
+            // Process the contents
+            const processedContents = response.map(item => {
+              const processedItem = { ...item };
+              
+              // Ensure proper path handling
+              if (processedItem.path && (!processedItem.Path || processedItem.Path === '')) {
+                // Use the API-returned path directly
+                processedItem.Path = processedItem.path;
+              } else if (!processedItem.Path || processedItem.Path === '') {
+                // Only add path prefix if item doesn't already have a full path
+                processedItem.Path = (processedItem.name || processedItem.Name);
+                if (cleanPath) {
+                  processedItem.Path = `${cleanPath}/${processedItem.Path}`;
+                }
+              }
+              
+              return processedItem;
+            });
+            
+            setContents(processedContents);
+          } else {
+            // If we got an empty or non-array response, set empty contents
+            setContents([]);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching directory contents:', err);
+          setError(`Failed to load directory contents: ${err.message || 'Unknown error'}`);
+          setContents([]); // Ensure contents are reset on error
+        });
+    }, 100); // Small delay to ensure navigation completes
   };
 
   // Handle file selection
@@ -210,7 +259,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
             </div>
           ) : (!contents || contents.length === 0) ? (
             <div className="p-6 text-center text-gray-500">
-              {error || "This repository appears to be empty. If you've recently pushed files, please refresh the page."}
+              {error || `No files found in "${currentPath || '/'}" directory. If you've recently pushed files, please refresh.`}
               {username && reponame && (
                 <div className="mt-4">
                   <button 

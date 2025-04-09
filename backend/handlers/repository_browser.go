@@ -50,6 +50,9 @@ func GetRepositoryContents(w http.ResponseWriter, r *http.Request) {
 	// Clean the path to prevent directory traversal
 	path = strings.TrimPrefix(path, "/")
 	path = strings.Trim(path, ".")
+	
+	// Replace backslashes with forward slashes for consistent path handling cross-platform
+	path = strings.ReplaceAll(path, "\\", "/")
 
 	// Get the ref (branch, tag, commit) from query parameters
 	ref := r.URL.Query().Get("ref")
@@ -124,6 +127,9 @@ func GetFileContent(w http.ResponseWriter, r *http.Request) {
 	// Clean the path to prevent directory traversal
 	filePath = strings.TrimPrefix(filePath, "/")
 	filePath = strings.Trim(filePath, ".")
+	
+	// Replace backslashes with forward slashes for consistent path handling cross-platform
+	filePath = strings.ReplaceAll(filePath, "\\", "/")
 
 	// Get the ref (branch, tag, commit) from query parameters
 	ref := r.URL.Query().Get("ref")
