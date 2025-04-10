@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +61,29 @@ func GetRepositoryContents(repoPath, relativePath, ref string) ([]*FileEntry, er
 		// Use --name-only to just get paths for the root directory to get top-level entries
 		cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref)
 	} else {
-		cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref, relativePath)
+		// Check if the path is a directory by using ls-tree to see its type
+		checkDirCmd := exec.Command("git", "-C", repoPath, "ls-tree", ref, relativePath)
+		var checkOut, checkErr bytes.Buffer
+		checkDirCmd.Stdout = &checkOut
+		checkDirCmd.Stderr = &checkErr
+		checkDirCmd.Run() // Ignore error as we're just checking
+		
+		checkResult := checkOut.String()
+		log.Printf("Checking if '%s' is a directory: %s", relativePath, checkResult)
+		
+		// Check if the path is a directory (tree)
+		isDir := strings.Contains(checkResult, "tree")
+		
+		if isDir {
+			// If it's a directory, we need to get its contents
+			// Use the ref:path/ format to get contents INSIDE the directory
+			log.Printf("'%s' is a directory, getting its contents", relativePath)
+			cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref, relativePath + "/")
+		} else {
+			// If it's not a directory (or not found), use regular ls-tree
+			log.Printf("'%s' is not a directory, using standard ls-tree", relativePath)
+			cmd = exec.Command("git", "-C", repoPath, "ls-tree", ref, relativePath)
+		}
 	}
 	
 	var stdout, stderr bytes.Buffer
@@ -186,7 +209,16 @@ func GetRepositoryContents(repoPath, relativePath, ref string) ([]*FileEntry, er
 		// Get the file path to use for commit lookup and display
 		filePath := name
 		if relativePath != "." {
-			filePath = filepath.Join(relativePath, name)
+			// Critical fix: prevent duplicated paths like "src/src/file.js"
+			// If the name already starts with the relativePath, don't prepend it again
+			if !strings.HasPrefix(name, relativePath+"/") && !strings.HasPrefix(name, relativePath+"\\") {
+				filePath = filepath.Join(relativePath, name)
+				log.Printf("Created file path: %s by joining %s and %s", filePath, relativePath, name)
+			} else {
+				// The name already contains the path - don't duplicate it
+				log.Printf("Path already contains directory: %s - using name directly", name)
+				filePath = name
+			}
 		}
 
 		// Get last commit for this file but skip on large repositories to improve performance
@@ -277,14 +309,37 @@ func GetFileContent(repoPath, filePath, ref string) (*FileEntry, error) {
 		return nil, fmt.Errorf("path is not a file")
 	}
 
-	// Get file content
-	cmd = exec.Command("git", "-C", repoPath, "show", fmt.Sprintf("%s:%s", ref, filePath))
+	// Get file content using git show with proper path format
+	// This is the critical part: using ref:path format for nested files
+	// Always convert Windows-style backslashes to forward slashes for Git
+	// Git always uses forward slashes regardless of OS
+	
+	// CRITICAL FIX: Convert all backslashes to forward slashes
+	gitPath := strings.ReplaceAll(filePath, "\\", "/")
+	
+	// Fix duplicated paths like "src/src/file.js"
+	pathParts := strings.Split(gitPath, "/")
+	if len(pathParts) >= 2 && pathParts[0] == pathParts[1] {
+		// Found a duplicated directory name, fix it
+		log.Printf("Found duplicated directory in path: %s", gitPath)
+		gitPath = strings.Join(pathParts[1:], "/")
+		log.Printf("Fixed path: %s", gitPath)
+	}
+	
+	// Build the Git command with proper path format
+	fileCmdStr := fmt.Sprintf("%s:%s", ref, gitPath)
+	cmd = exec.Command("git", "-C", repoPath, "show", fileCmdStr)
 	stdout.Reset()
 	stderr.Reset()
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+
+	// Log the exact command for debugging
+	log.Printf("Executing git command: git -C %s show %s", repoPath, fileCmdStr)
+	
 	err = cmd.Run()
 	if err != nil {
+		log.Printf("Error fetching file content: %v - %s", err, stderr.String())
 		return nil, fmt.Errorf("error getting file content: %v - %s", err, stderr.String())
 	}
 

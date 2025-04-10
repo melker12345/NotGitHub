@@ -26,6 +26,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const [repository, setRepository] = useState(null);
+  const [currentDirectory, setCurrentDirectory] = useState(null);
   const currentPath = searchParams.get('path') || '';
   // Use props if provided, otherwise fall back to URL params
   const params = useParams();
@@ -47,43 +48,67 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
     fetchRepository();
   }, [username, reponame]);
 
-  // Function to fetch repository contents
+  // Function to fetch repository contents on component mount and URL changes
   const fetchContents = async () => {
     try {
       setIsLoading(true);
       setError('');
       
-      console.log(`Fetching contents for ${username}/${reponame}, path: ${currentPath}`);
-      // Fetch contents using GitHub-style URL pattern
+      // IMPORTANT: For debugging
+      console.log(`*** FETCHING CONTENTS FOR ${username}/${reponame}, path: '${currentPath}'`);
+      
+      // Fetch contents using GitHub-style URL pattern - currentPath comes from URL
       const response = await repositoryBrowserService.getContentsByPath(username, reponame, currentPath);
       
-      console.log('Repository contents response:', response);
+      // Log complete response for debugging
+      console.log('API RESPONSE:', JSON.stringify(response, null, 2));
       
       if (response && Array.isArray(response)) {
-        // Ensure each item has a unique Path property for React keys and file operations
+        // Process contents with path fixing to handle backend path duplication issue
         const processedContents = response.map(item => {
-          // Make a copy of the item to avoid modifying the original
-          const processedItem = { ...item };
+          // Fix the backend path duplication issue (e.g., "src\src")
+          let fixedPath = item.path || '';
+          const name = item.name || '';
           
-          // Check for lowercase path property (from API)
-          // If we have a lowercase path property from the API, copy it to Path for consistency
-          if (processedItem.path && (!processedItem.Path || processedItem.Path === '')) {
-            processedItem.Path = processedItem.path;
+          // Check for Windows-style path duplication and fix it
+          if (fixedPath.includes('\\') && fixedPath.includes(`${name}\\${name}`)) {
+            console.log(`Fixing duplicated path: ${fixedPath}`);
+            // For Windows-style paths (backslashes)
+            fixedPath = fixedPath.replace(`${name}\\${name}`, name);
           } 
-          // If Path is still missing, construct it from Name
-          else if (!processedItem.Path || processedItem.Path === '') {
-            const pathPrefix = currentPath ? currentPath + '/' : '';
-            processedItem.Path = pathPrefix + (processedItem.name || processedItem.Name);
+          // Check for Unix-style path duplication
+          else if (fixedPath.includes('/') && fixedPath.includes(`${name}/${name}`)) {
+            console.log(`Fixing duplicated path: ${fixedPath}`);
+            // For Unix-style paths (forward slashes) 
+            fixedPath = fixedPath.replace(`${name}/${name}`, name);
           }
           
-          // Log each processed item for debugging
-          console.log('Processed item:', processedItem);
-          
-          return processedItem;
+          return {
+            // Keep original properties
+            ...item,
+            // Ensure consistent capitalization for key properties used in UI
+            Name: item.name || item.Name,
+            Path: fixedPath, // Use the fixed path
+            Type: item.type || item.Type
+          };
         });
         
-        console.log('Processed contents:', processedContents);
+        // Update the contents state
         setContents(processedContents);
+        console.log('PROCESSED CONTENTS:', processedContents);
+        
+        // Update current directory based on path from URL
+        if (currentPath) {
+          setCurrentDirectory({
+            name: currentPath.split('/').pop() || reponame,
+            path: currentPath
+          });
+        } else {
+          setCurrentDirectory({
+            name: reponame,
+            path: ''
+          });
+        }
       } else {
         console.error('Invalid response format:', response);
         throw new Error('Invalid response format');
@@ -100,82 +125,123 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
   // Call fetchContents when component mounts or path changes
   useEffect(() => {
     if (username && reponame) {
+      console.log('Path changed, fetching contents for:', currentPath);
       fetchContents();
+      
+      // Initialize current directory based on path
+      if (currentPath) {
+        setCurrentDirectory({
+          name: currentPath.split('/').pop() || reponame,
+          path: currentPath
+        });
+      } else {
+        setCurrentDirectory({
+          name: reponame,
+          path: ''
+        });
+      }
     }
   }, [username, reponame, currentPath]);
 
-  // Handle directory navigation
+  // Direct folder navigation handler
   const handleNavigate = (path) => {
-    // Ensure we're using the clean path without redundancy
-    // Clean the path to avoid double paths like frost\frost
-    const cleanPath = path.replace(/\\/g, '/'); // Replace backslashes with forward slashes
+    // CRITICAL: Clean the path to ensure consistent format
+    const cleanPath = path.replace(/\\/g, '/').trim();
     
-    console.log('Navigating to directory with clean path:', cleanPath);
+    console.log('*** NAVIGATING TO FOLDER:', cleanPath);
     
-    // First update the URL with the clean path
+    // Reset state for new navigation
+    setSelectedFile(null);
+    setError('');
+    
+    // Update current directory tracking
+    const dirName = cleanPath.split('/').pop() || reponame;
+    setCurrentDirectory({
+      name: dirName,
+      path: cleanPath
+    });
+    
+    // Update the URL - this will trigger the useEffect that fetches contents
     navigate(`/${username}/${reponame}/browser?path=${encodeURIComponent(cleanPath)}`);
     
-    // Also manually fetch contents for the directory
+    // IMPORTANT: Directly fetch contents as a backup in case the effect doesn't trigger
+    // This ensures we always get the folder contents even if React has optimized away the effect
     setTimeout(() => {
-      console.log('Fetching contents for path:', cleanPath);
-      
-      // Directly fetch the contents with the clean path
-      repositoryBrowserService.getContentsByPath(username, reponame, cleanPath)
-        .then(response => {
-          console.log('Directory contents response:', response);
-          if (response && Array.isArray(response)) {
-            // Process the contents
-            const processedContents = response.map(item => {
-              const processedItem = { ...item };
-              
-              // Ensure proper path handling
-              if (processedItem.path && (!processedItem.Path || processedItem.Path === '')) {
-                // Use the API-returned path directly
-                processedItem.Path = processedItem.path;
-              } else if (!processedItem.Path || processedItem.Path === '') {
-                // Only add path prefix if item doesn't already have a full path
-                processedItem.Path = (processedItem.name || processedItem.Name);
-                if (cleanPath) {
-                  processedItem.Path = `${cleanPath}/${processedItem.Path}`;
-                }
-              }
-              
-              return processedItem;
-            });
-            
-            setContents(processedContents);
-          } else {
-            // If we got an empty or non-array response, set empty contents
-            setContents([]);
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching directory contents:', err);
-          setError(`Failed to load directory contents: ${err.message || 'Unknown error'}`);
-          setContents([]); // Ensure contents are reset on error
-        });
-    }, 100); // Small delay to ensure navigation completes
+      // Only fetch if we're still on the same path (user hasn't navigated away)
+      if (cleanPath === currentPath) {
+        console.log('Direct fetch for path:', cleanPath);
+        fetchContents();
+      }
+    }, 100);
   };
+  
+
 
   // Handle file selection
   const handleFileSelect = async (file) => {
     try {
       console.log('Selecting file:', file);
+      setIsLoading(true);
       
       // Check both lowercase and uppercase path properties
       let filePath = file.Path || file.path;
+      const fileName = file.Name || file.name || '';
       
       if (!filePath) {
         throw new Error('File path is missing');
       }
       
-      console.log('Using file path:', filePath);
+      // Get the base file name without path
+      const fileNameOnly = fileName.split('/').pop().split('\\').pop();
+      console.log(`Full file name: ${fileName}, File name only: ${fileNameOnly}`);
+      
+      // Advanced path duplication fixes
+      // For nested files we need to handle different path patterns
+      
+      // First, handle prefix duplication like src\src\file.js
+      if (currentPath && (filePath.includes('\\') || filePath.includes('/')) && filePath.includes(`${currentPath}\\${currentPath}`) || filePath.includes(`${currentPath}/${currentPath}`)) {
+        console.log(`Fixing duplicated directory prefix in path: ${filePath}`);
+        
+        // Replace both Windows and Unix style path duplicates
+        filePath = filePath.replace(`${currentPath}\\${currentPath}`, currentPath);
+        filePath = filePath.replace(`${currentPath}/${currentPath}`, currentPath);
+      }
+      
+      // Then fix paths that have doubled-up filenames
+      if (filePath.includes(`\\${fileNameOnly}\\${fileNameOnly}`)) {
+        console.log(`Fixing Windows-style duplicated filename: ${filePath}`);
+        filePath = filePath.replace(`\\${fileNameOnly}\\${fileNameOnly}`, `\\${fileNameOnly}`);
+      } else if (filePath.includes(`/${fileNameOnly}/${fileNameOnly}`)) {
+        console.log(`Fixing Unix-style duplicated filename: ${filePath}`);
+        filePath = filePath.replace(`/${fileNameOnly}/${fileNameOnly}`, `/${fileNameOnly}`);
+      }
+      
+      // Remove any src/src pattern at the beginning
+      if (filePath.startsWith('src\\src\\')) {
+        console.log('Fixing leading src\\src pattern');
+        filePath = filePath.replace('src\\src\\', 'src\\');
+      } else if (filePath.startsWith('src/src/')) {
+        console.log('Fixing leading src/src pattern');
+        filePath = filePath.replace('src/src/', 'src/');
+      }
+      
+      console.log('Using fixed file path:', filePath);
+      console.log(`Requesting file content: ${username}/${reponame}/${filePath}`);
+      
       const fileData = await repositoryBrowserService.getFileContentByPath(username, reponame, filePath);
       console.log('File content response:', fileData);
+      
+      // Make sure content is available in the data
+      if (!fileData.content && fileData.Content) {
+        fileData.content = fileData.Content;
+      }
+      
       setSelectedFile(fileData);
     } catch (err) {
       console.error('Error fetching file content:', err);
       setError(`Failed to load file content: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -295,10 +361,40 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                           {item.Type === 'dir' || item.type === 'dir' ? (
                             <button
                               onClick={() => {
-                                console.log('Navigating to directory:', item);
-                                const dirPath = item.path || item.Path;
-                                console.log('Directory path:', dirPath);
-                                handleNavigate(dirPath);
+                                // When a folder is clicked, navigate to its contents
+                                const dirName = item.Name || item.name;
+                                
+                                // CRITICAL: For folders, construct path by appending name to current path
+                                // Prevent duplication like "src/src/components"
+                                let targetPath;
+                                
+                                // Remove duplicate paths like "src/src" or backslash variants
+                                // This checks if the directory name already includes the current path
+                                if (dirName.includes('/') && dirName.startsWith(currentPath + '/')) {
+                                  console.log(`Directory name already contains path: ${dirName}`);
+                                  targetPath = dirName;
+                                } else if (dirName.includes('\\') && dirName.startsWith(currentPath + '\\')) {
+                                  console.log(`Directory name already contains path: ${dirName}`);
+                                  targetPath = dirName;
+                                } else {
+                                  // Standard path construction without duplication
+                                  targetPath = currentPath 
+                                    ? `${currentPath}/${dirName}` 
+                                    : dirName;
+                                }
+                                
+                                console.log('== FOLDER NAVIGATION ==');
+                                console.log(`From '${currentPath}' -> '${targetPath}'`);
+                                
+                                // Clear selected file
+                                setSelectedFile(null);
+                                
+                                // Use React Router navigation to preserve auth state
+                                navigate(`/${username}/${reponame}/browser?path=${encodeURIComponent(targetPath)}`);
+                                
+                                // Prevent the immediate re-fetch and let the URL change trigger the appropriate fetch
+                                // This ensures we don't get path conflicts and let React Router handle the navigation properly
+                                // DON'T manually fetch contents here - let the useEffect hook handle it
                               }}
                               className="flex items-center text-blue-600 hover:underline"
                             >
@@ -361,7 +457,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
           )}
         </div>
 
-        {/* File preview */}
+        {/* File/Folder preview */}
         <div className="w-full md:w-1/2 bg-white shadow rounded-lg overflow-hidden">
           {selectedFile ? (
             <div className="h-full flex flex-col">
@@ -381,6 +477,36 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
               </div>
               <div className="flex-grow p-4 overflow-auto">
                 <pre className="text-sm font-mono whitespace-pre-wrap">{selectedFile.content || selectedFile.Content || ''}</pre>
+              </div>
+            </div>
+          ) : currentDirectory ? (
+            <div className="h-full flex flex-col">
+              <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium truncate">
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      {currentDirectory.name || 'Repository Root'}
+                    </div>
+                  </h3>
+                </div>
+              </div>
+              <div className="flex-grow p-4 overflow-auto">
+                <div className="mb-4 text-sm text-gray-600">
+                  <p>Viewing directory contents. Select a file to view its contents or click on a folder to navigate into it.</p>
+                </div>
+                
+                <div className="mt-2">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Directory Information:</h4>
+                  <div className="bg-gray-50 p-3 rounded-md text-sm">
+                    <p><span className="font-medium">Path:</span> /{currentDirectory.path || ''}</p>
+                    <p><span className="font-medium">Items:</span> {contents.length}</p>
+                    <p><span className="font-medium">Files:</span> {contents.filter(item => (item.type === 'file' || item.Type === 'file')).length}</p>
+                    <p><span className="font-medium">Folders:</span> {contents.filter(item => (item.type === 'dir' || item.Type === 'dir')).length}</p>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
