@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,11 +9,24 @@ function LoginPage() {
     email: '',
     password: '',
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, authError, clearAuthError } = useAuth();
+  
+  // Clear auth errors when component mounts
+  useEffect(() => {
+    clearAuthError();
+  }, [clearAuthError]);
+  
+  // Show auth errors from context
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,19 +42,30 @@ function LoginPage() {
     try {
       const response = await authService.login(formData);
       const token = response.data.token;
+      const refreshTokenValue = response.data.refreshToken; // Backend should provide this
       const user = response.data.user;
 
       if (!isTokenValid(token)) {
         setError('Received invalid or expired token from server.');
+        setIsLoading(false);
         return;
       }
 
-      login(token); // Update context/localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      setSuccess('Sign in successful! Redirecting...');
-      setTimeout(() => {
-        navigate('/repositories');
-      }, 1000);
+      // Login with the token, refresh token, and remember me option
+      const loginSuccess = login(token, refreshTokenValue, rememberMe);
+      
+      if (loginSuccess) {
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(user));
+        setSuccess('Sign in successful! Redirecting...');
+        
+        // Navigate after a short delay to show success message
+        setTimeout(() => {
+          navigate('/repositories');
+        }, 1000);
+      } else {
+        setError('Login failed. Please try again.');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(
@@ -51,6 +75,10 @@ function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleRememberMeChange = (e) => {
+    setRememberMe(e.target.checked);
   };
 
 
@@ -96,6 +124,20 @@ function LoginPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="••••••••"
             />
+          </div>
+          
+          <div className="mb-6 flex items-center">
+            <input
+              id="rememberMe"
+              name="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={handleRememberMeChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+              Remember me
+            </label>
           </div>
           
           <button

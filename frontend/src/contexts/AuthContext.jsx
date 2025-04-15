@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { isTokenValid, getToken } from "../services/authService";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { 
+  isTokenValid, 
+  getToken, 
+  getRefreshToken,
+  isTokenExpiringSoon, 
+  refreshToken,
+  getUserFromToken 
+} from "../services/authService";
+import api from "../services/api";
 
 const AuthContext = createContext();
 
@@ -7,35 +15,162 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
+  const [tokenRefreshInProgress, setTokenRefreshInProgress] = useState(false);
 
-  useEffect(() => {
-    const token = getToken();
-    if (token && isTokenValid(token)) {
-      setIsAuthenticated(true);
-      // Optionally fetch user info here
-      setUser(null); // Set user info if available
-    } else {
-      setIsAuthenticated(false);
-      setUser(null);
+  // Function to handle token refresh
+  const handleTokenRefresh = useCallback(async () => {
+    try {
+      if (tokenRefreshInProgress) return;
+      setTokenRefreshInProgress(true);
+      
+      const token = getToken();
+      // Only try to refresh if we have a token that's expiring soon
+      if (token && isTokenExpiringSoon(token) && getRefreshToken()) {
+        console.log("Token is expiring soon, attempting refresh");
+        const newToken = await refreshToken();
+        if (newToken && isTokenValid(newToken)) {
+          console.log("Token refreshed successfully");
+          // Update user from the new token
+          const userData = getUserFromToken(newToken);
+          if (userData) {
+            setUser(userData);
+          }
+          setIsAuthenticated(true);
+          setAuthError(null);
+        } else {
+          console.error("Received invalid token during refresh");
+          handleLogout();
+          setAuthError("Session expired. Please log in again.");
+        }
+      }
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      handleLogout();
+      setAuthError("Session expired. Please log in again.");
+    } finally {
+      setTokenRefreshInProgress(false);
     }
-    setLoading(false);
-  }, []);
+  }, [tokenRefreshInProgress]);
 
-  const login = (token) => {
-    localStorage.setItem("authToken", token);
-    setIsAuthenticated(true);
-    setUser(null); // Set user info if available
+  // Check authentication status on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        setLoading(true);
+        const token = getToken();
+        
+        if (!token) {
+          setIsAuthenticated(false);
+          setUser(null);
+          return;
+        }
+        
+        if (isTokenValid(token)) {
+          // Get user info from token or localStorage
+          const userData = getUserFromToken(token) || JSON.parse(localStorage.getItem("user") || "null");
+          setUser(userData);
+          setIsAuthenticated(true);
+          
+          // Check if token needs refresh
+          if (isTokenExpiringSoon(token)) {
+            await handleTokenRefresh();
+          }
+        } else {
+          // Token is invalid, try to refresh it
+          try {
+            if (getRefreshToken()) {
+              await handleTokenRefresh();
+            } else {
+              // No refresh token, just log out
+              handleLogout();
+            }
+          } catch (refreshError) {
+            console.error("Error during token refresh:", refreshError);
+            handleLogout();
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        handleLogout();
+        setAuthError("Authentication error. Please log in again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initAuth();
+    
+    // Set up periodic token refresh (every 4 minutes)
+    const refreshInterval = setInterval(() => {
+      const token = getToken();
+      if (token && isTokenExpiringSoon(token)) {
+        handleTokenRefresh();
+      }
+    }, 4 * 60 * 1000); // 4 minutes
+    
+    return () => clearInterval(refreshInterval);
+  }, [handleTokenRefresh]);
+
+  // Handle login with optional remember me
+  const login = (token, refreshTokenValue = null, rememberMe = false) => {
+    try {
+      if (!token || !isTokenValid(token)) {
+        setAuthError("Invalid authentication token");
+        return false;
+      }
+      
+      localStorage.setItem("authToken", token);
+      
+      // Store refresh token if provided
+      if (refreshTokenValue) {
+        localStorage.setItem("refreshToken", refreshTokenValue);
+      }
+      
+      // Get user info from token
+      const userData = getUserFromToken(token);
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
+      
+      setIsAuthenticated(true);
+      setAuthError(null);
+      return true;
+    } catch (error) {
+      console.error("Login error:", error);
+      setAuthError("Login failed. Please try again.");
+      return false;
+    }
   };
 
-  const logout = () => {
+  // Logout function
+  const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
     setIsAuthenticated(false);
     setUser(null);
-    // Navigation should be handled in the component using useAuth
+  };
+
+  // Clear any auth errors
+  const clearAuthError = () => {
+    setAuthError(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, user, login, logout }}>
+    <AuthContext.Provider 
+      value={{ 
+        isAuthenticated, 
+        loading, 
+        user, 
+        login, 
+        logout: handleLogout, 
+        authError,
+        clearAuthError
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
