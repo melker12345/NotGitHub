@@ -21,17 +21,19 @@ function UserProfilePage() {
     try {
       setLoading(true);
       const offset = page * limit;
-      const response = await repositoryService.getUserPublicRepositories(username, limit, offset);
+      const data = await repositoryService.getUserPublicRepositories(username, limit, offset);
       
       // If we get fewer results than the limit, we've reached the end
-      if (response.data.length < limit) {
+      if (data.length < limit) {
         setHasMore(false);
+      } else {
+        setHasMore(true);
       }
       
       if (page === 0) {
-        setRepositories(response.data);
+        setRepositories(data);
       } else {
-        setRepositories(prev => [...prev, ...response.data]);
+        setRepositories(prev => [...prev, ...data]);
       }
     } catch (err) {
       console.error(`Error fetching repositories for user ${username}:`, err);
