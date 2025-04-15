@@ -10,6 +10,8 @@ import RepositoryBrowserPage from './pages/RepositoryBrowserPage';
 import NewRepositoryPage from './pages/NewRepositoryPage';
 import SSHKeysPage from './pages/SSHKeysPage';
 import WelcomePage from './pages/WelcomePage';
+import ExplorePage from './pages/ExplorePage';
+import UserProfilePage from './pages/UserProfilePage';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -25,6 +27,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/repositories" element={<HomePage />} />
+              <Route path="/explore" element={<ExplorePage />} />
               <Route path="/repositories/new" element={
                 <PrivateRoute>
                   <NewRepositoryPage />
@@ -45,6 +48,8 @@ function App() {
               {/* User profile and settings routes */}
               <Route path="/profile" element={<HomePage />} />
               <Route path="/settings" element={<HomePage />} />
+              {/* User profile page - must come after the repository routes to avoid conflicts */}
+              <Route path="/:username" element={<UserProfilePage />} />
               <Route path="/profile/ssh-keys" element={
                 <PrivateRoute>
                   <SSHKeysPage />

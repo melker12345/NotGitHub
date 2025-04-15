@@ -60,6 +60,10 @@ func main() {
 		fmt.Fprintf(w, "Server is running")
 	}).Methods("GET", "OPTIONS")
 
+	// Public repository exploration endpoints (placed high in route order to avoid shadowing)
+	router.HandleFunc("/api/repositories/public", handlers.GetPublicRepositories).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/repositories/user", handlers.GetUserPublicRepositories).Methods("GET", "OPTIONS")
+
 	// Auth routes - explicitly allow OPTIONS
 	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST", "OPTIONS")

@@ -1,4 +1,5 @@
 import api from './api';
+import { getAppropriateEndpoint, isAuthenticated } from '../utils/repositoryPermissions';
 
 const repositoryBrowserService = {
   /**
@@ -11,61 +12,74 @@ const repositoryBrowserService = {
    */
   getContentsByPath: async (username, repoName, path = '', ref = 'HEAD') => {
     try {
-      // DEBUG: Log exactly what we're requesting
-      // console.log('=== API REQUEST DETAILS ===');
-      // console.log(`Repository: ${username}/${repoName}`);
-      // console.log(`Path parameter: '${path}'`);
-      // console.log(`Ref: ${ref}`);
+      // Determine the appropriate endpoint based on authentication status
+      const endpoint = isAuthenticated() 
+        ? `/${username}/${repoName}/contents` 
+        : `/public/${username}/${repoName}/contents`;
       
-      // First try to access as authenticated user
-      const response = await api.get(`/${username}/${repoName}/contents`, {
+      const response = await api.get(endpoint, {
         params: { path, ref },
         baseURL: 'http://localhost:8080/api'
       });
       
-      // DEBUG: Log the full response JSON
-      // console.log('=== API RESPONSE SUCCESS ===');
-      // console.log(`Status: ${response.status}`);
-      // console.log(`Data received for path '${path}':`, JSON.stringify(response.data, null, 2));
+      // Process response data for consistent format
+      let processedData = response.data;
       
-      // Check if the response is an array (should be for directory contents)
-      if (Array.isArray(response.data)) {
-        // console.log(`Received ${response.data.length} items in directory '${path}'`);
-        // Log each item's type and path
-        response.data.forEach((item, index) => {
-          // console.log(`[${index}] ${item.type || item.Type}: ${item.name || item.Name} - Path: ${item.path || item.Path}`);
-        });
-      } else {
-        // console.log(`Received non-array response for path '${path}'`, response.data);
+      // Normalize data structure (handle different case conventions)
+      if (Array.isArray(processedData)) {
+        processedData = processedData.map(item => ({
+          name: item.name || item.Name,
+          path: item.path || item.Path,
+          type: item.type || item.Type,
+          size: item.size || item.Size,
+          sha: item.sha || item.Sha,
+          url: item.url || item.Url,
+          download_url: item.download_url || item.Download_url,
+        }));
       }
       
-      return response.data;
+      return processedData;
     } catch (error) {
-      // console.error(`=== API ERROR for path '${path}' ===`);
-      // console.error(error);
-      
-      // If unauthorized, try the public endpoint
-      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-        console.log('Using public endpoint for repository contents');
+      // If authenticated request fails with 401/403, try public endpoint
+      if (isAuthenticated() && 
+          error.response && 
+          (error.response.status === 401 || error.response.status === 403)) {
         try {
           const publicResponse = await api.get(`/public/${username}/${repoName}/contents`, {
             params: { path, ref },
             baseURL: 'http://localhost:8080/api'
           });
           
-          // DEBUG: Log the full public response JSON
-          // console.log('=== PUBLIC API RESPONSE SUCCESS ===');
-          // console.log(`Status: ${publicResponse.status}`);
-          // console.log(`Data received for path '${path}':`, JSON.stringify(publicResponse.data, null, 2));
+          // Process response data for consistent format
+          let processedData = publicResponse.data;
           
-          return publicResponse.data;
+          // Normalize data structure (handle different case conventions)
+          if (Array.isArray(processedData)) {
+            processedData = processedData.map(item => ({
+              name: item.name || item.Name,
+              path: item.path || item.Path,
+              type: item.type || item.Type,
+              size: item.size || item.Size,
+              sha: item.sha || item.Sha,
+              url: item.url || item.Url,
+              download_url: item.download_url || item.Download_url,
+            }));
+          }
+          
+          return processedData;
         } catch (publicError) {
-          // console.error('=== PUBLIC API ERROR ===');
-          // console.error(publicError);
           throw publicError;
         }
       }
-      throw error; // Re-throw if it's not an auth error
+      
+      // Add more context to the error
+      if (error.response && error.response.status === 404) {
+        error.message = `Repository ${username}/${repoName} not found or you don't have access to it`;
+      } else if (error.response && error.response.status === 403) {
+        error.message = `You don't have permission to access ${username}/${repoName}`;
+      }
+      
+      throw error;
     }
   },
 
@@ -82,30 +96,79 @@ const repositoryBrowserService = {
       throw new Error('Path parameter is required to fetch file content');
     }
     
-    console.log(`Fetching file content for ${username}/${repoName}, path: ${path}, ref: ${ref}`);
-    
     try {
-      // First try to access as authenticated user
-      const response = await api.get(`/${username}/${repoName}/file`, {
+      // Determine the appropriate endpoint based on authentication status
+      const endpoint = isAuthenticated() 
+        ? `/${username}/${repoName}/file` 
+        : `/public/${username}/${repoName}/file`;
+      
+      const response = await api.get(endpoint, {
         params: { path, ref },
         baseURL: 'http://localhost:8080/api'
       });
-      console.log('File content API response:', response);
-      return response.data;
-    } catch (error) {
-      console.error('Error accessing authenticated file endpoint:', error);
       
-      // If unauthorized, try the public endpoint
-      if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-        console.log('Using public endpoint for file content');
-        const publicResponse = await api.get(`/public/${username}/${repoName}/file`, {
-          params: { path, ref },
-          baseURL: 'http://localhost:8080/api'
-        });
-        console.log('Public file content API response:', publicResponse);
-        return publicResponse.data;
+      // Process response data for consistent format
+      let fileData = response.data;
+      
+      // Normalize data structure (handle different case conventions)
+      return {
+        name: fileData.name || fileData.Name,
+        path: fileData.path || fileData.Path,
+        content: fileData.content || fileData.Content,
+        encoding: fileData.encoding || fileData.Encoding,
+        size: fileData.size || fileData.Size,
+        sha: fileData.sha || fileData.Sha,
+        type: fileData.type || fileData.Type,
+        url: fileData.url || fileData.Url,
+        download_url: fileData.download_url || fileData.Download_url,
+        language: fileData.language || fileData.Language,
+      };
+    } catch (error) {
+      // If authenticated request fails with 401/403, try public endpoint
+      if (isAuthenticated() && 
+          error.response && 
+          (error.response.status === 401 || error.response.status === 403)) {
+        try {
+          const publicResponse = await api.get(`/public/${username}/${repoName}/file`, {
+            params: { path, ref },
+            baseURL: 'http://localhost:8080/api'
+          });
+          
+          // Process response data for consistent format
+          let fileData = publicResponse.data;
+          
+          // Normalize data structure (handle different case conventions)
+          return {
+            name: fileData.name || fileData.Name,
+            path: fileData.path || fileData.Path,
+            content: fileData.content || fileData.Content,
+            encoding: fileData.encoding || fileData.Encoding,
+            size: fileData.size || fileData.Size,
+            sha: fileData.sha || fileData.Sha,
+            type: fileData.type || fileData.Type,
+            url: fileData.url || fileData.Url,
+            download_url: fileData.download_url || fileData.Download_url,
+            language: fileData.language || fileData.Language,
+          };
+        } catch (publicError) {
+          // Add more context to the error
+          if (publicError.response && publicError.response.status === 404) {
+            publicError.message = `File not found: ${path} in ${username}/${repoName}`;
+          } else if (publicError.response && publicError.response.status === 403) {
+            publicError.message = `You don't have permission to access this file`;
+          }
+          throw publicError;
+        }
       }
-      throw error; // Re-throw if it's not an auth error
+      
+      // Add more context to the error
+      if (error.response && error.response.status === 404) {
+        error.message = `File not found: ${path} in ${username}/${repoName}`;
+      } else if (error.response && error.response.status === 403) {
+        error.message = `You don't have permission to access this file`;
+      }
+      
+      throw error;
     }
   },
 
@@ -118,11 +181,86 @@ const repositoryBrowserService = {
    * @returns {Promise} - Promise with commit history
    */
   getCommitHistoryByPath: async (username, repoName, ref = 'HEAD', limit = 10) => {
-    const response = await api.get(`/${username}/${repoName}/commits`, {
-      params: { ref, limit },
-      baseURL: 'http://localhost:8080/api' // Explicitly set the base URL to ensure API prefix
-    });
-    return response.data;
+    try {
+      // Determine the appropriate endpoint based on authentication status
+      const endpoint = isAuthenticated() 
+        ? `/${username}/${repoName}/commits` 
+        : `/public/${username}/${repoName}/commits`;
+      
+      const response = await api.get(endpoint, {
+        params: { ref, limit },
+        baseURL: 'http://localhost:8080/api'
+      });
+      
+      // Process response data for consistent format
+      let commits = response.data;
+      
+      // Normalize data structure (handle different case conventions)
+      if (Array.isArray(commits)) {
+        commits = commits.map(commit => ({
+          sha: commit.sha || commit.Sha,
+          commit: commit.commit || commit.Commit,
+          author: commit.author || commit.Author,
+          committer: commit.committer || commit.Committer,
+          parents: commit.parents || commit.Parents,
+          message: commit.message || (commit.commit ? commit.commit.message : null) || 
+                  (commit.Commit ? commit.Commit.message : null),
+          date: commit.date || (commit.commit ? commit.commit.committer.date : null) || 
+                (commit.Commit ? commit.Commit.committer.date : null),
+        }));
+      }
+      
+      return commits;
+    } catch (error) {
+      // If authenticated request fails with 401/403, try public endpoint
+      if (isAuthenticated() && 
+          error.response && 
+          (error.response.status === 401 || error.response.status === 403)) {
+        try {
+          const publicResponse = await api.get(`/public/${username}/${repoName}/commits`, {
+            params: { ref, limit },
+            baseURL: 'http://localhost:8080/api'
+          });
+          
+          // Process response data for consistent format
+          let commits = publicResponse.data;
+          
+          // Normalize data structure (handle different case conventions)
+          if (Array.isArray(commits)) {
+            commits = commits.map(commit => ({
+              sha: commit.sha || commit.Sha,
+              commit: commit.commit || commit.Commit,
+              author: commit.author || commit.Author,
+              committer: commit.committer || commit.Committer,
+              parents: commit.parents || commit.Parents,
+              message: commit.message || (commit.commit ? commit.commit.message : null) || 
+                      (commit.Commit ? commit.Commit.message : null),
+              date: commit.date || (commit.commit ? commit.commit.committer.date : null) || 
+                    (commit.Commit ? commit.Commit.committer.date : null),
+            }));
+          }
+          
+          return commits;
+        } catch (publicError) {
+          // Add more context to the error
+          if (publicError.response && publicError.response.status === 404) {
+            publicError.message = `Repository ${username}/${repoName} not found or you don't have access to it`;
+          } else if (publicError.response && publicError.response.status === 403) {
+            publicError.message = `You don't have permission to access ${username}/${repoName}`;
+          }
+          throw publicError;
+        }
+      }
+      
+      // Add more context to the error
+      if (error.response && error.response.status === 404) {
+        error.message = `Repository ${username}/${repoName} not found or you don't have access to it`;
+      } else if (error.response && error.response.status === 403) {
+        error.message = `You don't have permission to access ${username}/${repoName}`;
+      }
+      
+      throw error;
+    }
   }
 };
 
