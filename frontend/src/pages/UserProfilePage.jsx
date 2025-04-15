@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { repositoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
+import NumberSpinner from '../components/NumberSpinner';
 
 function UserProfilePage() {
   const { username } = useParams();
@@ -97,35 +98,43 @@ function UserProfilePage() {
       
       {/* User Statistics Section */}
       <div className="bg-gray-50 rounded-lg p-6 mb-8 shadow-sm">
-        {statsLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        ) : userStats ? (
-          <div>
-            <h2 className="text-xl font-semibold mb-4">User Statistics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-blue-600">{userStats.total_repositories}</div>
-                <div className="text-gray-600 text-sm">Total Repositories</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-green-600">{userStats.public_repositories}</div>
-                <div className="text-gray-600 text-sm">Public Repositories</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-purple-600">{userStats.total_commits.toLocaleString()}</div>
-                <div className="text-gray-600 text-sm">Total Commits</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="text-3xl font-bold text-orange-600">{userStats.total_lines_of_code.toLocaleString()}</div>
-                <div className="text-gray-600 text-sm">Lines of Code</div>
-              </div>
+        <div>
+          <h2 className="text-xl font-semibold mb-4">User Statistics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <NumberSpinner 
+                value={userStats?.total_repositories} 
+                color="blue" 
+                isLoading={statsLoading} 
+              />
+              <div className="text-gray-600 text-sm">Total Repositories</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <NumberSpinner 
+                value={userStats?.public_repositories} 
+                color="green" 
+                isLoading={statsLoading} 
+              />
+              <div className="text-gray-600 text-sm">Public Repositories</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <NumberSpinner 
+                value={userStats?.total_commits} 
+                color="purple" 
+                isLoading={statsLoading} 
+              />
+              <div className="text-gray-600 text-sm">Total Commits</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <NumberSpinner 
+                value={userStats?.total_lines_of_code} 
+                color="orange" 
+                isLoading={statsLoading} 
+              />
+              <div className="text-gray-600 text-sm">Lines of Code</div>
             </div>
           </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No statistics available</p>
-        )}
+        </div>
       </div>
 
       {error && (
