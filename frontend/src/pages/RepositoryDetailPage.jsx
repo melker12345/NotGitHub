@@ -4,6 +4,8 @@ import repositoryService from '../services/repositoryService';
 import repositoryBrowserService from '../services/repositoryBrowserService';
 import FileBrowser from '../components/repositories/FileBrowser';
 
+import { useAuth } from '../contexts/AuthContext';
+
 function RepositoryDetailPage() {
   const { username, reponame } = useParams();
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ function RepositoryDetailPage() {
         // Check if repository has files
         try {
           const contents = await repositoryBrowserService.getContentsByPath(username, reponame);
-          console.log('Repository contents:', contents);
+          // console.log('Repository contents:', contents);
           // If we got contents and there are items, the repository has files
           setHasFiles(Array.isArray(contents) && contents.length > 0);
         } catch (contentErr) {
@@ -98,125 +100,52 @@ function RepositoryDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Repository Header */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{repository.name}</h1>
-            {repository.description && (
-              <p className="mt-2 text-gray-600">{repository.description}</p>
-            )}
-            <div className="mt-3 flex items-center space-x-4">
-              <span className={`px-2 py-1 text-xs rounded ${repository.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                {repository.is_public ? 'Public' : 'Private'}
-              </span>
-              <span className="text-sm text-gray-500">
-                Created on {new Date(repository.created_at).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-          <div className="flex space-x-2">
-            <Link
-              to={`/${username}/${reponame}/browser`}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              Browse Files
-            </Link>
-            <Link
-              to={`/${username}/${reponame}/settings`}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
-            >
-              Settings
-            </Link>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm font-medium"
-            >
-              Delete
-            </button>
-          </div>
+      {copySuccess && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded fixed top-4 right-4 shadow-md">
+          {copySuccess}
         </div>
-      </div>
-
-      {/* Clone Instructions */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Clone Repository</h2>
-        
-        <div className="space-y-4">
-          {/* HTTPS Clone */}
-          <div>
-            <h3 className="text-md font-medium mb-2">HTTPS</h3>
-            <div className="flex items-center">
-              <div className="flex-grow bg-gray-100 rounded-md p-3 font-mono text-sm overflow-x-auto">
-                {httpsCloneUrl}
-              </div>
-              <button 
-                onClick={() => copyToClipboard(httpsCloneUrl)}
-                className="ml-2 p-2 bg-gray-200 hover:bg-gray-300 rounded-md"
-                title="Copy to clipboard"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          {/* SSH Clone */}
-          <div>
-            <h3 className="text-md font-medium mb-2">SSH</h3>
-            <div className="flex items-center">
-              <div className="flex-grow bg-gray-100 rounded-md p-3 font-mono text-sm overflow-x-auto">
-                {sshCloneUrl}
-              </div>
-              <button 
-                onClick={() => copyToClipboard(sshCloneUrl)}
-                className="ml-2 p-2 bg-gray-200 hover:bg-gray-300 rounded-md"
-                title="Copy to clipboard"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                </svg>
-              </button>
-            </div>
-            <p className="mt-2 text-sm text-gray-600">
-              Don't forget to <Link to="/profile/ssh-keys" className="text-blue-600 hover:underline">add your SSH key</Link> before using SSH to clone.
-            </p>
-          </div>
-          
-          {copySuccess && (
-            <div className="mt-2 text-sm text-green-600 font-medium">
-              {copySuccess}
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Repository Files */}
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Repository Files</h2>
-        <div className="bg-gray-100 p-8 rounded-md">
-          <h3 className="text-lg font-medium mb-4">Quick setup — if you've done this kind of thing before</h3>
+        <div className="bg-gray-100 p-6 rounded-md">
+          <h3 className="text-lg font-medium mb-4">Quick setup</h3>
           
-          <div className="flex items-center mb-6">
-            <div className="flex-grow bg-gray-200 rounded-md p-3 font-mono text-sm overflow-x-auto">
-              {httpsCloneUrl}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex items-center">
+              <div className="flex-grow bg-gray-200 rounded-md p-3 font-mono text-sm overflow-x-auto">
+                <span className="font-medium text-gray-600 mr-2">HTTPS:</span>
+                {httpsCloneUrl}
+              </div>
+              <button 
+                onClick={() => copyToClipboard(httpsCloneUrl)}
+                className="ml-2 p-2 bg-gray-300 hover:bg-gray-400 rounded-md"
+                title="Copy HTTPS URL"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+              </button>
             </div>
-            <button 
-              onClick={() => copyToClipboard(httpsCloneUrl)}
-              className="ml-2 p-2 bg-gray-300 hover:bg-gray-400 rounded-md"
-              title="Copy to clipboard"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-              </svg>
-            </button>
+            
+            <div className="flex items-center">
+              <div className="flex-grow bg-gray-200 rounded-md p-3 font-mono text-sm overflow-x-auto">
+                <span className="font-medium text-gray-600 mr-2">SSH:</span>
+                {sshCloneUrl}
+              </div>
+              <button 
+                onClick={() => copyToClipboard(sshCloneUrl)}
+                className="ml-2 p-2 bg-gray-300 hover:bg-gray-400 rounded-md"
+                title="Copy SSH URL"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+              </button>
+            </div>
           </div>
           
           {!hasFiles ? (
@@ -270,6 +199,49 @@ cd ${repository.name}`}
           )}
           
           {/* Always show repository files, whether empty or not */}
+        </div>
+      </div>
+
+      {/* Repository Header */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{repository.name}</h1>
+            {repository.description && (
+              <p className="mt-2 text-gray-600">{repository.description}</p>
+            )}
+            <div className="mt-3 flex items-center space-x-4">
+              <span className={`px-2 py-1 text-xs rounded ${repository.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                {repository.is_public ? 'Public' : 'Private'}
+              </span>
+              <span className="text-sm text-gray-500">
+                Created on {new Date(repository.created_at).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Link
+              to={`/${username}/${reponame}/browser`}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              Browse Files
+            </Link>
+            <Link
+              to={`/${username}/${reponame}/settings`}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
+            >
+              Settings
+            </Link>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm font-medium"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
 

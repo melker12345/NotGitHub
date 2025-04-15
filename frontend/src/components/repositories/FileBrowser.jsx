@@ -74,13 +74,13 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
       setError('');
       
       // IMPORTANT: For debugging
-      console.log(`*** FETCHING CONTENTS FOR ${username}/${reponame}, path: '${currentPath}'`);
+      // console.log(`*** FETCHING CONTENTS FOR ${username}/${reponame}, path: '${currentPath}'`);
       
       // Fetch contents using GitHub-style URL pattern - currentPath comes from URL
       const response = await repositoryBrowserService.getContentsByPath(username, reponame, currentPath);
       
       // Log complete response for debugging
-      console.log('API RESPONSE:', JSON.stringify(response, null, 2));
+      // console.log('API RESPONSE:', JSON.stringify(response, null, 2));
       
       if (response && Array.isArray(response)) {
         // Process contents with path fixing to handle backend path duplication issue
@@ -114,7 +114,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
         
         // Update the contents state
         setContents(processedContents);
-        console.log('PROCESSED CONTENTS:', processedContents);
+        // console.log('PROCESSED CONTENTS:', processedContents);
         
         // Update current directory based on path from URL
         if (currentPath) {
@@ -144,7 +144,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
   // Call fetchContents when component mounts or path changes
   useEffect(() => {
     if (username && reponame) {
-      console.log('Path changed, fetching contents for:', currentPath);
+      // console.log('Path changed, fetching contents for:', currentPath);
       fetchContents();
       
       // Initialize current directory based on path
@@ -246,7 +246,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
       
       // Get the base file name without path
       const fileNameOnly = fileName.split('/').pop().split('\\').pop();
-      console.log(`Full file name: ${fileName}, File name only: ${fileNameOnly}`);
+      // console.log(`Full file name: ${fileName}, File name only: ${fileNameOnly}`);
       
       // Advanced path duplication fixes
       // For nested files we need to handle different path patterns
@@ -278,11 +278,11 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
         filePath = filePath.replace('src/src/', 'src/');
       }
       
-      console.log('Using fixed file path:', filePath);
-      console.log(`Requesting file content: ${username}/${reponame}/${filePath}`);
+      // console.log('Using fixed file path:', filePath);
+      // console.log(`Requesting file content: ${username}/${reponame}/${filePath}`);
       
       const fileData = await repositoryBrowserService.getFileContentByPath(username, reponame, filePath);
-      console.log('File content response:', fileData);
+      // console.log('File content response:', fileData);
       
       // Make sure content is available in the data
       if (!fileData.content && fileData.Content) {
@@ -291,7 +291,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
       
       // Determine language for syntax highlighting
       const language = getLanguage(fileNameOnly);
-      console.log(`Detected language for syntax highlighting: ${language}`);
+      // console.log(`Detected language for syntax highlighting: ${language}`);
       
       // Set selected file with language information
       setSelectedFile({
@@ -438,10 +438,10 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                                 // Remove duplicate paths like "src/src" or backslash variants
                                 // This checks if the directory name already includes the current path
                                 if (dirName.includes('/') && dirName.startsWith(currentPath + '/')) {
-                                  console.log(`Directory name already contains path: ${dirName}`);
+                                  // console.log(`Directory name already contains path: ${dirName}`);
                                   targetPath = dirName;
                                 } else if (dirName.includes('\\') && dirName.startsWith(currentPath + '\\')) {
-                                  console.log(`Directory name already contains path: ${dirName}`);
+                                  // console.log(`Directory name already contains path: ${dirName}`);
                                   targetPath = dirName;
                                 } else {
                                   // Standard path construction without duplication
@@ -450,8 +450,8 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                                     : dirName;
                                 }
                                 
-                                console.log('== FOLDER NAVIGATION ==');
-                                console.log(`From '${currentPath}' -> '${targetPath}'`);
+                                // console.log('== FOLDER NAVIGATION ==');
+                                // console.log(`From '${currentPath}' -> '${targetPath}'`);
                                 
                                 // Clear selected file
                                 setSelectedFile(null);
@@ -473,8 +473,8 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                           ) : (
                             <button
                               onClick={() => {
-                                console.log('Clicking file item:', item);
-                                console.log('File path:', item.path || item.Path);
+                                // console.log('Clicking file item:', item);
+                                // console.log('File path:', item.path || item.Path);
                                 // Explicitly check for path property (case insensitive)
                                 if (item.path || item.Path) {
                                   const filePath = item.path || item.Path;

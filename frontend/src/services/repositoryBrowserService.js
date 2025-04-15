@@ -12,10 +12,10 @@ const repositoryBrowserService = {
   getContentsByPath: async (username, repoName, path = '', ref = 'HEAD') => {
     try {
       // DEBUG: Log exactly what we're requesting
-      console.log('=== API REQUEST DETAILS ===');
-      console.log(`Repository: ${username}/${repoName}`);
-      console.log(`Path parameter: '${path}'`);
-      console.log(`Ref: ${ref}`);
+      // console.log('=== API REQUEST DETAILS ===');
+      // console.log(`Repository: ${username}/${repoName}`);
+      // console.log(`Path parameter: '${path}'`);
+      // console.log(`Ref: ${ref}`);
       
       // First try to access as authenticated user
       const response = await api.get(`/${username}/${repoName}/contents`, {
@@ -24,25 +24,25 @@ const repositoryBrowserService = {
       });
       
       // DEBUG: Log the full response JSON
-      console.log('=== API RESPONSE SUCCESS ===');
-      console.log(`Status: ${response.status}`);
-      console.log(`Data received for path '${path}':`, JSON.stringify(response.data, null, 2));
+      // console.log('=== API RESPONSE SUCCESS ===');
+      // console.log(`Status: ${response.status}`);
+      // console.log(`Data received for path '${path}':`, JSON.stringify(response.data, null, 2));
       
       // Check if the response is an array (should be for directory contents)
       if (Array.isArray(response.data)) {
-        console.log(`Received ${response.data.length} items in directory '${path}'`);
+        // console.log(`Received ${response.data.length} items in directory '${path}'`);
         // Log each item's type and path
         response.data.forEach((item, index) => {
-          console.log(`[${index}] ${item.type || item.Type}: ${item.name || item.Name} - Path: ${item.path || item.Path}`);
+          // console.log(`[${index}] ${item.type || item.Type}: ${item.name || item.Name} - Path: ${item.path || item.Path}`);
         });
       } else {
-        console.log(`Received non-array response for path '${path}'`, response.data);
+        // console.log(`Received non-array response for path '${path}'`, response.data);
       }
       
       return response.data;
     } catch (error) {
-      console.error(`=== API ERROR for path '${path}' ===`);
-      console.error(error);
+      // console.error(`=== API ERROR for path '${path}' ===`);
+      // console.error(error);
       
       // If unauthorized, try the public endpoint
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
@@ -54,14 +54,14 @@ const repositoryBrowserService = {
           });
           
           // DEBUG: Log the full public response JSON
-          console.log('=== PUBLIC API RESPONSE SUCCESS ===');
-          console.log(`Status: ${publicResponse.status}`);
-          console.log(`Data received for path '${path}':`, JSON.stringify(publicResponse.data, null, 2));
+          // console.log('=== PUBLIC API RESPONSE SUCCESS ===');
+          // console.log(`Status: ${publicResponse.status}`);
+          // console.log(`Data received for path '${path}':`, JSON.stringify(publicResponse.data, null, 2));
           
           return publicResponse.data;
         } catch (publicError) {
-          console.error('=== PUBLIC API ERROR ===');
-          console.error(publicError);
+          // console.error('=== PUBLIC API ERROR ===');
+          // console.error(publicError);
           throw publicError;
         }
       }

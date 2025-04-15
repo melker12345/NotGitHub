@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { isTokenValid } from '../services/authService';
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -9,7 +11,9 @@ function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,17 +24,24 @@ function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await authService.login(formData);
-      
-      // Store the token and user info in localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('authToken', response.data.token); // Also set the authToken for consistency
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      // Force a page reload to update the authentication state
-      window.location.href = '/';
+      const token = response.data.token;
+      const user = response.data.user;
+
+      if (!isTokenValid(token)) {
+        setError('Received invalid or expired token from server.');
+        return;
+      }
+
+      login(token); // Update context/localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+      setSuccess('Sign in successful! Redirecting...');
+      setTimeout(() => {
+        navigate('/repositories');
+      }, 1000);
     } catch (err) {
       console.error('Login error:', err);
       setError(
@@ -41,6 +52,7 @@ function LoginPage() {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="flex justify-center items-center min-h-[calc(100vh-16rem)]">

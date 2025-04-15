@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import repositoryService from '../services/repositoryService';
 
+import { useAuth } from '../contexts/AuthContext';
+
 function RepositorySettingsPage() {
   const { username, reponame } = useParams();
   const navigate = useNavigate();
