@@ -83,6 +83,18 @@ const repositoryService = {
       https: `http://localhost:8080/${username}/${repoName}.git`,
       ssh: `ssh://git@localhost:8080/${username}/${repoName}.git`
     };
+  },
+  
+  /**
+   * Get statistics for a specific user
+   * @param {string} username Username to get statistics for
+   * @returns {Promise} Promise with the user statistics
+   */
+  getUserStats: async (username) => {
+    const response = await api.get(`/users/${username}/stats`, {
+      baseURL: 'http://localhost:8080/api'
+    });
+    return response.data;
   }
 };
 

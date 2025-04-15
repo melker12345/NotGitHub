@@ -14,6 +14,7 @@ import ExplorePage from './pages/ExplorePage';
 import UserProfilePage from './pages/UserProfilePage';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
+import ProfileRedirect from './components/ProfileRedirect';
 
 function App() {
   return (
@@ -46,7 +47,9 @@ function App() {
                 </PrivateRoute>
               } />
               {/* User profile and settings routes */}
-              <Route path="/profile" element={<HomePage />} />
+              <Route path="/profile" element={<PrivateRoute>
+                <ProfileRedirect />
+              </PrivateRoute>} />
               <Route path="/settings" element={<HomePage />} />
               {/* User profile page - must come after the repository routes to avoid conflicts */}
               <Route path="/:username" element={<UserProfilePage />} />

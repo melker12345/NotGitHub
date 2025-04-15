@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { repositoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { format } from 'date-fns';
 
 function UserProfilePage() {
   const { username } = useParams();
@@ -10,11 +11,14 @@ function UserProfilePage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [userStats, setUserStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const limit = 10;
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     fetchUserRepositories();
+    fetchUserStats();
   }, [username, page]);
 
   const fetchUserRepositories = async () => {
@@ -51,11 +55,20 @@ function UserProfilePage() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return format(date, 'MMM d, yyyy');
+  };
+  
+  const fetchUserStats = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await repositoryService.getUserStats(username);
+      setUserStats(stats);
+    } catch (err) {
+      console.error(`Error fetching stats for user ${username}:`, err);
+      // We don't set an error here to avoid disrupting the whole page if stats fail
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
   // Check if viewing own profile
@@ -66,7 +79,11 @@ function UserProfilePage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">{username}</h1>
-          <p className="text-gray-600">User Profile</p>
+          <p className="text-gray-600">
+            {userStats && !statsLoading ? 
+              `Joined on ${formatDate(userStats.joined_date)}` : 
+              'User Profile'}
+          </p>
         </div>
         {isOwnProfile && (
           <Link 
@@ -75,6 +92,39 @@ function UserProfilePage() {
           >
             New Repository
           </Link>
+        )}
+      </div>
+      
+      {/* User Statistics Section */}
+      <div className="bg-gray-50 rounded-lg p-6 mb-8 shadow-sm">
+        {statsLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : userStats ? (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">User Statistics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="text-3xl font-bold text-blue-600">{userStats.total_repositories}</div>
+                <div className="text-gray-600 text-sm">Total Repositories</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="text-3xl font-bold text-green-600">{userStats.public_repositories}</div>
+                <div className="text-gray-600 text-sm">Public Repositories</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="text-3xl font-bold text-purple-600">{userStats.total_commits.toLocaleString()}</div>
+                <div className="text-gray-600 text-sm">Total Commits</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="text-3xl font-bold text-orange-600">{userStats.total_lines_of_code.toLocaleString()}</div>
+                <div className="text-gray-600 text-sm">Lines of Code</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-4">No statistics available</p>
         )}
       </div>
 

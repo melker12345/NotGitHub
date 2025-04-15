@@ -172,6 +172,19 @@ export const repositoryService = {
       throw error;
     }
   },
+  
+  // Get statistics for a specific user
+  getUserStats: async (username) => {
+    try {
+      const response = await api.get(`/users/${username}/stats`, {
+        baseURL: API_URL
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching user stats: ${error}`);
+      throw error;
+    }
+  },
 };
 
 // Add a global response interceptor to handle session expiry (401/403)
