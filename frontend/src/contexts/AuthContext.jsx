@@ -127,15 +127,39 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("refreshToken", refreshTokenValue);
       }
       
-      // Get user info from token
-      const userData = getUserFromToken(token);
-      if (userData) {
-        setUser(userData);
+      // CRITICAL: Get the user data from localStorage that was just set by the LoginPage
+      // This ensures we have the full user object including username
+      const storedUserStr = localStorage.getItem("user");
+      let userData;
+      
+      if (storedUserStr) {
+        try {
+          userData = JSON.parse(storedUserStr);
+          console.log("AUTH CONTEXT: Using complete user data from localStorage:", userData);
+          
+          // Directly update the user state with the full user object
+          setUser(userData);
+        } catch (e) {
+          console.error("Error parsing stored user data:", e);
+          // Fall back to token data
+          userData = getUserFromToken(token);
+          setUser(userData);
+        }
+      } else {
+        // No stored user data, extract what we can from the token
+        userData = getUserFromToken(token);
+        // Save this data for future use
         localStorage.setItem("user", JSON.stringify(userData));
+        setUser(userData);
       }
       
+      // Update authentication state
       setIsAuthenticated(true);
       setAuthError(null);
+      
+      // Additional debug log to confirm state updates
+      console.log("AUTH CONTEXT: Authentication complete, user state updated");
+      
       return true;
     } catch (error) {
       console.error("Login error:", error);

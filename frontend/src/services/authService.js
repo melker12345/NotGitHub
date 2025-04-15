@@ -64,12 +64,35 @@ export async function refreshToken() {
     }
 }
 
-// Get user data from the token
+// Get user data from the token or localStorage
 export function getUserFromToken(token) {
     if (!token) return null;
     try {
+        // First try to use the token payload
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return { id: payload.user_id };
+        
+        // Check if there's a stored user object in localStorage that has more information
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+                // If the stored user has the same ID as the token, use the stored data
+                // which likely has more fields like username, email, etc.
+                if (parsedUser && parsedUser.id === payload.user_id) {
+                    console.log('Using stored user data:', parsedUser);
+                    return parsedUser;
+                }
+            } catch (parseError) {
+                console.error("Error parsing stored user:", parseError);
+            }
+        }
+        
+        // If we don't have stored user data, try to extract as much as possible from the token
+        return { 
+            id: payload.user_id,
+            username: payload.username || payload.user_name || '',
+            email: payload.email || ''
+        };
     } catch (e) {
         console.error("Error extracting user from token:", e);
         return null;

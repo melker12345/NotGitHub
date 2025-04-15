@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext'
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
+  // Log the user object to debug
+  console.log('User in Navbar:', user);
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
@@ -100,7 +102,7 @@ function Navbar() {
               <>
                 <Link to="/repositories" className="block px-3 py-2 rounded hover:bg-gray-700">Repositories</Link>
                 <Link to="/explore" className="block px-3 py-2 rounded hover:bg-gray-700">Explore</Link>
-                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-700">Your Profile</Link>
+                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-700">{user?.username || 'Your Profile'}</Link>
                 <Link to="/profile/ssh-keys" className="block px-3 py-2 rounded hover:bg-gray-700">SSH Keys</Link>
                 <Link to="/settings" className="block px-3 py-2 rounded hover:bg-gray-700">Settings</Link>
                 <button 

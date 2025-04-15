@@ -51,12 +51,14 @@ function LoginPage() {
         return;
       }
 
-      // Login with the token, refresh token, and remember me option
+      // First, store the user data in localStorage so it's available to the AuthContext
+      localStorage.setItem('user', JSON.stringify(user));
+      console.log('LoginPage: Saved user to localStorage:', user);
+
+      // Then login with the token, refresh token, and remember me option
       const loginSuccess = login(token, refreshTokenValue, rememberMe);
       
       if (loginSuccess) {
-        // Store user data
-        localStorage.setItem('user', JSON.stringify(user));
         setSuccess('Sign in successful! Redirecting...');
         
         // Navigate after a short delay to show success message
