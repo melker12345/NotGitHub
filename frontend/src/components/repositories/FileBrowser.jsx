@@ -1,7 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import repositoryBrowserService from '../../services/repositoryBrowserService';
 import repositoryService from '../../services/repositoryService';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism.css';
+
+// Import additional languages
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-jsx';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-tsx';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-scss';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
 
 // Format file size in a human-readable way
 const formatFileSize = (bytes) => {
@@ -177,6 +196,40 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
   
 
 
+  // Function to determine language for syntax highlighting based on file extension
+  const getLanguage = (filename) => {
+    if (!filename) return 'text';
+    
+    const extension = filename.split('.').pop().toLowerCase();
+    
+    // Map file extensions to Prism language classes
+    const languageMap = {
+      js: 'javascript',
+      jsx: 'jsx',
+      ts: 'typescript',
+      tsx: 'tsx',
+      py: 'python',
+      html: 'html',
+      css: 'css',
+      scss: 'scss',
+      json: 'json',
+      md: 'markdown',
+      go: 'go',
+      sh: 'bash',
+      bash: 'bash',
+      yml: 'yaml',
+      yaml: 'yaml',
+      java: 'java',
+      c: 'c',
+      cpp: 'cpp',
+      h: 'c',
+      hpp: 'cpp',
+      // Add more language mappings as needed
+    };
+    
+    return languageMap[extension] || 'text';
+  };
+  
   // Handle file selection
   const handleFileSelect = async (file) => {
     try {
@@ -236,7 +289,21 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
         fileData.content = fileData.Content;
       }
       
-      setSelectedFile(fileData);
+      // Determine language for syntax highlighting
+      const language = getLanguage(fileNameOnly);
+      console.log(`Detected language for syntax highlighting: ${language}`);
+      
+      // Set selected file with language information
+      setSelectedFile({
+        ...fileData,
+        language
+      });
+      
+      // Trigger Prism highlighting after component updates
+      setTimeout(() => {
+        Prism.highlightAll();
+      }, 100);
+      
     } catch (err) {
       console.error('Error fetching file content:', err);
       setError(`Failed to load file content: ${err.message || 'Unknown error'}`);
@@ -318,7 +385,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
       {/* Repository contents */}
       <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
         {/* Directory listing */}
-        <div className="w-full md:w-1/2 bg-white shadow rounded-lg overflow-hidden">
+        <div className="w-full md:w-2/5 bg-white shadow rounded-lg overflow-hidden">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -338,17 +405,17 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto border border-gray-100 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
                       Last Commit
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
                       Size
                     </th>
                   </tr>
@@ -458,25 +525,35 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
         </div>
 
         {/* File/Folder preview */}
-        <div className="w-full md:w-1/2 bg-white shadow rounded-lg overflow-hidden">
+        <div className="w-full lg:w-3/5 bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
           {selectedFile ? (
             <div className="h-full flex flex-col">
-              <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium truncate">{selectedFile.name || selectedFile.Name || 'Unnamed file'}</h3>
-                  <span className="text-sm text-gray-500">{formatFileSize(selectedFile.size || selectedFile.Size || 0)}</span>
+                  <h3 className="font-medium truncate flex items-center text-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {selectedFile.name || selectedFile.Name || 'Unnamed file'}
+                  </h3>
+                  <span className="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-mono">{formatFileSize(selectedFile.size || selectedFile.Size || 0)}</span>
                 </div>
                 {(selectedFile.last_commit || selectedFile.LastCommit) && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Last modified by {(selectedFile.last_commit && selectedFile.last_commit.author) || (selectedFile.LastCommit && selectedFile.LastCommit.Author) || 'Unknown'} on {
+                  <div className="text-xs text-gray-500 mt-2 bg-gray-100 p-2 rounded-md">
+                    <span className="font-medium">Last modified by:</span> {(selectedFile.last_commit && selectedFile.last_commit.author) || (selectedFile.LastCommit && selectedFile.LastCommit.Author) || 'Unknown'} <br />
+                    <span className="font-medium">Date:</span> {
                       formatDate((selectedFile.last_commit && selectedFile.last_commit.timestamp) || 
                                (selectedFile.LastCommit && selectedFile.LastCommit.Timestamp) || 
                                new Date())}
                   </div>
                 )}
               </div>
-              <div className="flex-grow p-4 overflow-auto">
-                <pre className="text-sm font-mono whitespace-pre-wrap">{selectedFile.content || selectedFile.Content || ''}</pre>
+              <div className="flex-grow p-5 overflow-auto bg-gray-50">
+                <pre className="text-sm font-mono whitespace-pre-wrap bg-white p-4 rounded-md border border-gray-200 overflow-x-auto">
+                  <code className={`language-${selectedFile.language || 'text'}`}>
+                    {selectedFile.content || selectedFile.Content || ''}
+                  </code>
+                </pre>
               </div>
             </div>
           ) : currentDirectory ? (
