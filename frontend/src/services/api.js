@@ -125,8 +125,13 @@ export const repositoryService = {
     }
     
     const baseUrl = API_URL.replace('/api', '');
-    const httpsUrl = `${baseUrl}/${repository.owner?.username}/${repository.name}.git`;
-    const sshUrl = `git@${new URL(baseUrl).hostname}:${repository.owner?.username}/${repository.name}.git`;
+    const hostname = new URL(baseUrl).hostname;
+    
+    // Use the Git HTTP protocol endpoint
+    const httpsUrl = `${baseUrl}/git/${repository.owner?.username}/${repository.name}.git`;
+    
+    // Use SSH URL format with explicit port
+    const sshUrl = `ssh://git@${hostname}:2222/${repository.owner?.username}/${repository.name}.git`;
     
     return {
       https: httpsUrl,

@@ -81,6 +81,12 @@ func main() {
 	// Public repository endpoints that don't require authentication
 	router.HandleFunc("/api/public/{username}/{reponame}/contents", handlers.GetPublicRepositoryContents).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/public/{username}/{reponame}/file", handlers.GetPublicFileContent).Methods("GET", "OPTIONS")
+	
+	// Git HTTP protocol endpoints for cloning/pulling
+	router.HandleFunc("/git/{username}/{reponame}", handlers.HandleGitHTTP).Methods("GET", "POST", "OPTIONS")
+	router.HandleFunc("/git/{username}/{reponame}/info/refs", handlers.HandleGitHTTP).Methods("GET", "OPTIONS")
+	router.HandleFunc("/git/{username}/{reponame}/git-upload-pack", handlers.HandleGitHTTP).Methods("POST", "OPTIONS")
+	router.HandleFunc("/git/{username}/{reponame}/git-receive-pack", handlers.HandleGitHTTP).Methods("POST", "OPTIONS")
 
 	// Repository listing and creation endpoints
 	router.HandleFunc("/api/repositories", handlers.GetUserRepositories).Methods("GET", "OPTIONS")
