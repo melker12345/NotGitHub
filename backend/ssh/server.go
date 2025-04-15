@@ -247,6 +247,34 @@ func (s *Server) handleGitCommand(channel ssh.Channel, command string, username 
 	}
 	
 	log.Printf("Found repository at: %s", fsRepoPath)
+	
+	// Check repository visibility permissions
+	// Get repository information from the database
+	repo, err := models.GetRepositoryByUsernameAndName(repoOwner, strings.TrimSuffix(repoName, ".git"))
+	if err != nil {
+		log.Printf("Error retrieving repository information: %v", err)
+		// Continue with filesystem check only
+	} else if repo != nil {
+		// Check if this is a private repository that requires specific access
+		if !repo.IsPublic {
+			// Extract user ID from the SSH connection permissions
+			userIDFromSSH := "" // Default to no user
+			
+			// For git-upload-pack (read/clone), only owners can access private repos
+			if gitCommand == "git-upload-pack" && repo.OwnerID != userIDFromSSH {
+				fmt.Fprintf(channel.Stderr(), "You don't have access to this private repository\n")
+				channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
+				return
+			}
+			
+			// For git-receive-pack (write/push), only owners can push
+			if gitCommand == "git-receive-pack" && repo.OwnerID != userIDFromSSH {
+				fmt.Fprintf(channel.Stderr(), "You don't have write access to this repository\n")
+				channel.SendRequest("exit-status", false, []byte{0, 0, 0, 1})
+				return
+			}
+		}
+	}
 
 	// Execute the Git command
 	log.Printf("Executing %s on %s", gitCommand, fsRepoPath)

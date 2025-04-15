@@ -1,12 +1,17 @@
 package handlers
 
 import (
-	"fmt"
+	"bufio"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github-clone/models"
+	"github-clone/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -21,6 +26,23 @@ func HandleGitHTTP(w http.ResponseWriter, r *http.Request) {
 	if username == "" || reponame == "" {
 		http.Error(w, "Invalid repository path", http.StatusBadRequest)
 		return
+	}
+	
+	// Get authentication information if present, optional for public repos
+	userID := getUserIDOptional(r)
+	
+	// Check repository visibility to determine if the user has access
+	repo, err := models.GetRepositoryByUsernameAndName(username, reponame)
+	if err != nil {
+		log.Printf("Error retrieving repository information: %v", err)
+		// Continue processing, we'll check for repo existence on the filesystem
+	} else if repo != nil {
+		// If the repository exists in the database, check if the user has access
+		repoAccessChecker := utils.NewRepoAccess()
+		if !repoAccessChecker.CanCloneRepository(repo.OwnerID, repo.IsPublic, userID) {
+			http.Error(w, "You don't have access to this repository", http.StatusForbidden)
+			return
+		}
 	}
 
 	// Keep the .git suffix since our repository is stored with it
@@ -64,32 +86,149 @@ func HandleGitHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set Git HTTP backend headers
-	w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
-	
 	// Log the request for debugging
 	log.Printf("Git HTTP request: %s %s", r.Method, r.URL.Path)
 	
 	// Extract the operation type from the URL path
 	var operation string
+	var service string
 	if strings.Contains(r.URL.Path, "info/refs") {
 		operation = "info/refs"
+		// Get the service parameter
+		service = r.URL.Query().Get("service")
 	} else if strings.Contains(r.URL.Path, "git-upload-pack") {
 		operation = "git-upload-pack"
+		service = "git-upload-pack"
 	} else if strings.Contains(r.URL.Path, "git-receive-pack") {
 		operation = "git-receive-pack"
+		service = "git-receive-pack"
 	} else {
 		operation = "repository-root"
 	}
 	
-	// Display detailed information for diagnostic purposes
-	fmt.Fprintf(w, "Git HTTP protocol endpoint reached\n")
-	fmt.Fprintf(w, "\nRepository: %s/%s\n", username, repoDirName)
-	fmt.Fprintf(w, "Operation: %s\n", operation)
-	fmt.Fprintf(w, "Repository path: %s\n", repoPath)
-	fmt.Fprintf(w, "\nThis endpoint is under development.\n")
-	fmt.Fprintf(w, "For now, please use SSH for Git operations: ssh://git@localhost:2222/%s/%s\n", username, repoDirName)
+	log.Printf("Git operation: %s, service: %s", operation, service)
 	
-	// For production use, this would proxy to git-http-backend CGI script
-	// Example implementation would invoke the git-http-backend CGI with the appropriate environment variables
+	// Execute git-http-backend as a subprocess
+	// This is the simplest way to implement the Git HTTP protocol
+	// Create the command
+	cmd := exec.Command("git", "http-backend")
+	
+	// Get the base repository path (without username/repo.git)
+	repoBase := filepath.Dir(filepath.Dir(repoPath))
+	log.Printf("Repository base path: %s", repoBase)
+	
+	// Calculate the correct path info relative to the repository base
+	// The PathInfo should be the part after /git/ in the URL: /username/repo.git/info/refs
+	pathInfo := strings.Replace(r.URL.Path, "/git", "", 1)
+	log.Printf("PATH_INFO: %s", pathInfo)
+	
+	// Set up the environment for git-http-backend
+	cmd.Env = append(os.Environ(),
+		"GIT_PROJECT_ROOT="+repoBase,
+		"GIT_HTTP_EXPORT_ALL=true",
+		"PATH_INFO="+pathInfo,
+		"QUERY_STRING="+r.URL.RawQuery,
+		"REQUEST_METHOD="+r.Method,
+		"CONTENT_TYPE="+r.Header.Get("Content-Type"),
+	)
+	
+	if r.Header.Get("Content-Length") != "" {
+		cmd.Env = append(cmd.Env, "CONTENT_LENGTH="+r.Header.Get("Content-Length"))
+	}
+	
+	// Create pipes for stdin, stdout, stderr
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Printf("Error creating stdin pipe: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("Error creating stdout pipe: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("Error creating stderr pipe: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		log.Printf("Error starting git-http-backend: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	
+	// Copy request body to stdin
+	if r.Body != nil {
+		defer r.Body.Close()
+		_, err := io.Copy(stdin, r.Body)
+		if err != nil {
+			log.Printf("Error copying request body to stdin: %v", err)
+		}
+	}
+	stdin.Close()
+	
+	// Read and parse headers from stdout
+	bufReader := bufio.NewReader(stdout)
+	headerEnded := false
+	headers := make(map[string]string)
+	
+	for !headerEnded {
+		line, err := bufReader.ReadString('\n')
+		if err != nil || line == "\r\n" || line == "\n" {
+			headerEnded = true
+			if err != nil && err != io.EOF {
+				log.Printf("Error reading headers: %v", err)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+		
+		parts := strings.SplitN(strings.TrimSpace(line), ":", 2)
+		if len(parts) == 2 {
+			headers[parts[0]] = strings.TrimSpace(parts[1])
+		}
+	}
+	
+	// Set response headers
+	for key, value := range headers {
+		w.Header().Set(key, value)
+	}
+	
+	// If no Content-Type was set, use a default
+	if w.Header().Get("Content-Type") == "" {
+		if strings.HasSuffix(r.URL.Path, "/info/refs") {
+			if service == "git-upload-pack" {
+				w.Header().Set("Content-Type", "application/x-git-upload-pack-advertisement")
+			} else if service == "git-receive-pack" {
+				w.Header().Set("Content-Type", "application/x-git-receive-pack-advertisement")
+			}
+		} else if strings.Contains(r.URL.Path, "git-upload-pack") {
+			w.Header().Set("Content-Type", "application/x-git-upload-pack-result")
+		} else if strings.Contains(r.URL.Path, "git-receive-pack") {
+			w.Header().Set("Content-Type", "application/x-git-receive-pack-result")
+		}
+	}
+	
+	// Copy remaining stdout to response
+	_, err = io.Copy(w, bufReader)
+	if err != nil {
+		log.Printf("Error copying stdout to response: %v", err)
+	}
+	
+	// Read stderr for debugging
+	defer cmd.Wait()
+
+	errOutput, _ := io.ReadAll(stderr)
+	if len(errOutput) > 0 {
+		log.Printf("git-http-backend stderr: %s", string(errOutput))
+	}
 }
