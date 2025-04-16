@@ -85,6 +85,16 @@ func main() {
 	router.HandleFunc("/api/public/{username}/{reponame}/contents", handlers.GetPublicRepositoryContents).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/public/{username}/{reponame}/file", handlers.GetPublicFileContent).Methods("GET", "OPTIONS")
 	
+	// Issue management routes
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues", handlers.CreateIssue).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues", handlers.GetRepositoryIssues).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues/{id}", handlers.GetIssue).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues/{id}", handlers.UpdateIssueStatus).Methods("PATCH", "OPTIONS")
+	
+	// Issue voting routes
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues/{id}/vote", handlers.VoteOnIssue).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/repos/{owner}/{repo}/issues/{id}/vote", handlers.RemoveVoteFromIssue).Methods("DELETE", "OPTIONS")
+	
 	// Git HTTP protocol endpoints for cloning/pulling
 	router.HandleFunc("/git/{username}/{reponame}", handlers.HandleGitHTTP).Methods("GET", "POST", "OPTIONS")
 	router.HandleFunc("/git/{username}/{reponame}/info/refs", handlers.HandleGitHTTP).Methods("GET", "OPTIONS")

@@ -174,6 +174,12 @@ func GetRepositoryByOwnerAndName(ownerID, name string) (*Repository, error) {
 	return &repo, nil
 }
 
+// GetRepositoryByName fetches a repository by owner username and repository name
+// This is an alias for GetRepositoryByUsernameAndName for better readability in handlers
+func GetRepositoryByName(username, repoName string) (*Repository, error) {
+	return GetRepositoryByUsernameAndName(username, repoName)
+}
+
 // GetRepositoryByUsernameAndName fetches a repository by username and repository name
 func GetRepositoryByUsernameAndName(username, repoName string) (*Repository, error) {
 	query := `

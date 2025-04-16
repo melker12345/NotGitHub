@@ -119,5 +119,42 @@ func ConnectDB() error {
 		return fmt.Errorf("error creating ssh_keys table: %w", err)
 	}
 
+	// Create issues table for tracking repository issues
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS issues (
+			id TEXT PRIMARY KEY,
+			repository_id TEXT NOT NULL,
+			title TEXT NOT NULL,
+			description TEXT,
+			created_by TEXT NOT NULL,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			closed_at TIMESTAMP,
+			closed_by TEXT,
+			is_open BOOLEAN NOT NULL DEFAULT 1,
+			FOREIGN KEY(repository_id) REFERENCES repositories(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("error creating issues table: %w", err)
+	}
+	
+	// Create issue votes table for tracking user votes on issues
+	_, err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS issue_votes (
+			issue_id TEXT NOT NULL,
+			user_id TEXT NOT NULL,
+			vote INTEGER NOT NULL, -- 1 for upvote, -1 for downvote
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			PRIMARY KEY (issue_id, user_id),
+			FOREIGN KEY(issue_id) REFERENCES issues(id) ON DELETE CASCADE,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("error creating issue_votes table: %w", err)
+	}
+	
 	return nil
 }
