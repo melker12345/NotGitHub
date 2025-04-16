@@ -135,8 +135,16 @@ func GetRepositoryIssues(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	// Get issues
-	issues, err := models.GetRepositoryIssues(repository.ID, limit, offset, currentUsername)
+	// Check if we should filter by issue status
+	var isOpen *bool
+	isOpenParam := r.URL.Query().Get("is_open")
+	if isOpenParam != "" {
+		isOpenBool := isOpenParam == "true"
+		isOpen = &isOpenBool
+	}
+	
+	// Get issues with optional filter
+	issues, err := models.GetRepositoryIssuesFiltered(repository.ID, limit, offset, currentUsername, isOpen)
 	if err != nil {
 		http.Error(w, "Failed to get issues: "+err.Error(), http.StatusInternalServerError)
 		return

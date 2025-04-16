@@ -119,9 +119,10 @@ func GetIssue(issueID string, currentUsername string) (*Issue, error) {
 	return &issue, nil
 }
 
-// GetRepositoryIssues retrieves all issues for a repository with pagination
-func GetRepositoryIssues(repoID string, limit, offset int, currentUsername string) ([]*Issue, error) {
-	query := `
+// GetRepositoryIssuesFiltered retrieves issues for a repository with pagination and optional filtering by open/closed status
+func GetRepositoryIssuesFiltered(repoID string, limit, offset int, currentUsername string, isOpen *bool) ([]*Issue, error) {
+	// Build the query with optional filter
+	baseQuery := `
 		SELECT 
 			i.id, i.repository_id, i.title, i.description, 
 			i.created_by, i.created_at, i.updated_at, 
@@ -130,59 +131,80 @@ func GetRepositoryIssues(repoID string, limit, offset int, currentUsername strin
 		FROM issues i
 		LEFT JOIN issue_votes v ON i.id = v.issue_id
 		WHERE i.repository_id = ?
+	`
+	
+	// Add filter for open/closed status if provided
+	args := []interface{}{repoID}
+	if isOpen != nil {
+		baseQuery += " AND i.is_open = ?"
+		args = append(args, *isOpen)
+	}
+	
+	// Complete the query
+	query := baseQuery + `
 		GROUP BY i.id
 		ORDER BY i.created_at DESC
 		LIMIT ? OFFSET ?
 	`
 	
-	rows, err := config.DB.Query(query, repoID, limit, offset)
+	// Add pagination parameters
+	args = append(args, limit, offset)
+
+	// Execute the query
+	rows, err := config.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
-	var issues []*Issue
-	
+
+	// Process the results
+	issues := []*Issue{}
 	for rows.Next() {
 		var issue Issue
+		var closedAt sql.NullTime
+		var closedBy sql.NullString
 		var voteCount int
-		
+
 		err := rows.Scan(
 			&issue.ID, &issue.RepositoryID, &issue.Title, &issue.Description,
 			&issue.CreatedBy, &issue.CreatedAt, &issue.UpdatedAt,
-			&issue.ClosedAt, &issue.ClosedBy, &issue.IsOpen,
-			&voteCount,
+			&closedAt, &closedBy, &issue.IsOpen, &voteCount,
 		)
-		
 		if err != nil {
 			return nil, err
 		}
-		
+
+		issue.ClosedAt = closedAt
+		issue.ClosedBy = closedBy
 		issue.VoteCount = voteCount
+
 		issues = append(issues, &issue)
 	}
-	
-	// If a current user is provided, get their votes for these issues
+
+	// If we have a current user, get their votes for these issues
 	if currentUsername != "" && len(issues) > 0 {
-		// Create a list of issue IDs
-		var issueIDs []interface{}
-		for _, issue := range issues {
-			issueIDs = append(issueIDs, issue.ID)
+		// Build a list of issue IDs
+		issueIDs := make([]string, len(issues))
+		for i, issue := range issues {
+			issueIDs[i] = issue.ID
 		}
-		
-		// Create placeholders for the query
-		placeholders := "?" + strings.Repeat(",?", len(issueIDs)-1)
-		
-		// Get user votes for all issues in one query
-		votesQuery := fmt.Sprintf(`
+
+		// Get the user's votes for these issues
+		placeholders := strings.Repeat("?,", len(issueIDs))
+		placeholders = placeholders[:len(placeholders)-1] // Remove trailing comma
+
+		voteQuery := fmt.Sprintf(`
 			SELECT issue_id, vote FROM issue_votes
-			WHERE issue_id IN (%s) AND user_id = (SELECT id FROM users WHERE username = ?)
+			WHERE username = ? AND issue_id IN (%s)
 		`, placeholders)
-		
-		// Add user ID to the query params
-		voteParams := append(issueIDs, currentUsername)
-		
-		voteRows, err := config.DB.Query(votesQuery, voteParams...)
+
+		// Create args for the vote query
+		voteArgs := []interface{}{currentUsername}
+		for _, id := range issueIDs {
+			voteArgs = append(voteArgs, id)
+		}
+
+		voteRows, err := config.DB.Query(voteQuery, voteArgs...)
 		if err == nil {
 			defer voteRows.Close()
 			
@@ -206,6 +228,13 @@ func GetRepositoryIssues(repoID string, limit, offset int, currentUsername strin
 	}
 	
 	return issues, nil
+}
+
+// GetRepositoryIssues retrieves all issues for a repository with pagination
+// This is kept for backward compatibility
+func GetRepositoryIssues(repoID string, limit, offset int, currentUsername string) ([]*Issue, error) {
+	// Call the new filtered function with no filter
+	return GetRepositoryIssuesFiltered(repoID, limit, offset, currentUsername, nil)
 }
 
 // CloseIssue changes an issue's status to closed

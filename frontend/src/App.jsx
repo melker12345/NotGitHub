@@ -12,6 +12,10 @@ import SSHKeysPage from './pages/SSHKeysPage';
 import WelcomePage from './pages/WelcomePage';
 import ExplorePage from './pages/ExplorePage';
 import UserProfilePage from './pages/UserProfilePage';
+import RepositoryIssuesPage from './pages/RepositoryIssuesPage';
+import CreateIssuePage from './pages/CreateIssuePage';
+import IssueDetailPage from './pages/IssueDetailPage';
+import RepositoriesPage from './pages/RepositoriesPage';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import ProfileRedirect from './components/ProfileRedirect';
@@ -24,10 +28,11 @@ function App() {
           <Navbar />
           <main className="flex-grow container mx-auto px-4 py-8">
             <Routes>
-              <Route path="/" element={<WelcomePage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/repositories" element={<HomePage />} />
+              <Route path="/repositories" element={<RepositoriesPage />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/repositories/new" element={
                 <PrivateRoute>
@@ -46,6 +51,14 @@ function App() {
                   <RepositoryBrowserPage />
                 </PrivateRoute>
               } />
+              {/* Repository Issues Routes */}
+              <Route path="/:username/:reponame/issues" element={<RepositoryIssuesPage />} />
+              <Route path="/:username/:reponame/issues/new" element={
+                <PrivateRoute>
+                  <CreateIssuePage />
+                </PrivateRoute>
+              } />
+              <Route path="/:username/:reponame/issues/:issueid" element={<IssueDetailPage />} />
               {/* User profile and settings routes */}
               <Route path="/profile" element={<PrivateRoute>
                 <ProfileRedirect />

@@ -117,6 +117,96 @@ export const repositoryService = {
   //     params: { query, limit, offset }
   //   });
   // },
+
+  // Issue Management Functions
+  
+  // Get all issues for a repository with pagination and filtering
+  getRepositoryIssues: (username, repoName, limit = 10, offset = 0, isOpen = null) => {
+    const params = { limit, offset };
+    
+    // Add is_open filter if specified
+    if (isOpen !== null) {
+      params.is_open = isOpen;
+    }
+    
+    return api.get(`/repos/${username}/${repoName}/issues`, { params })
+    .then(response => {
+      // If no data or empty array, return empty array to avoid null errors
+      if (!response.data) return [];
+      return response.data;
+    })
+    .catch(error => {
+      // For 404 errors (no issues found), return empty array instead of throwing
+      if (error.response && error.response.status === 404) {
+        return [];
+      }
+      console.error('Error fetching repository issues:', error);
+      throw error;
+    });
+  },
+  
+  // Get a specific issue by ID
+  getIssue: (username, repoName, issueId) => {
+    return api.get(`/repos/${username}/${repoName}/issues/${issueId}`)
+      .then(response => response.data)
+      .catch(error => {
+        console.error('Error fetching issue details:', error);
+        throw error;
+      });
+  },
+  
+  // Create a new issue
+  createIssue: (username, repoName, issueData) => {
+    return api.post(`/repos/${username}/${repoName}/issues`, issueData)
+      .then(response => response.data)
+      .catch(error => {
+        console.error('Error creating issue:', error);
+        throw error;
+      });
+  },
+  
+  // Update an issue's status (open/closed)
+  updateIssueStatus: (username, repoName, issueId, statusData) => {
+    return api.patch(`/repos/${username}/${repoName}/issues/${issueId}`, statusData)
+      .then(response => {
+        // Make sure we have valid data before returning
+        if (response && response.data) {
+          return response.data;
+        }
+        return null;
+      })
+      .catch(error => {
+        // Log the error for debugging
+        console.error('Error updating issue status:', error);
+        
+        // For CORS errors, check if the backend server has PATCH in the allowed methods
+        if (error.message && error.message.includes('Network Error')) {
+          console.warn('Possible CORS issue. Make sure the backend allows PATCH requests.');
+        }
+        
+        throw error;
+      });
+  },
+  
+  // Vote on an issue (upvote/downvote)
+  voteOnIssue: (username, repoName, issueId, voteData) => {
+    return api.post(`/repos/${username}/${repoName}/issues/${issueId}/vote`, voteData)
+      .then(response => response.data)
+      .catch(error => {
+        console.error('Error voting on issue:', error);
+        throw error;
+      });
+  },
+  
+  // Remove a vote from an issue
+  removeIssueVote: (username, repoName, issueId) => {
+    return api.delete(`/repos/${username}/${repoName}/issues/${issueId}/vote`)
+      .then(response => response.data)
+      .catch(error => {
+        console.error('Error removing vote:', error);
+        throw error;
+      });
+  },
   
   // Generate clone URLs for a repository
   getCloneUrls: (repository) => {
