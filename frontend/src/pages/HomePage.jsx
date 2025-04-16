@@ -28,7 +28,7 @@ function HomePage() {
   // Redirect to login page if not authenticated and show welcome content
   if (!isAuthenticated) {
     return (
-      <div className="space-y-12">
+      <div className="space-y-8">
         {/* Hero Section for non-authenticated users */}
         <section className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:py-16 lg:px-8">

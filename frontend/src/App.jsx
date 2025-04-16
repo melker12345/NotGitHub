@@ -20,13 +20,16 @@ import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import ProfileRedirect from './components/ProfileRedirect';
 
+
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="flex flex-col min-h-screen bg-slate-900 relative overflow-hidden">
+          {/* Spotlight effect */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[1000px] h-[600px] rounded-full opacity-20 bg-blue-500 blur-[100px] z-0"></div>
+          <Navbar className="relative z-10" />
+          <main className="flex-grow container mx-auto px-4 py-8 relative z-10">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/welcome" element={<WelcomePage />} />

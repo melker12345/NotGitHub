@@ -70,9 +70,46 @@ function ExplorePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Explore Repositories</h1>
+    <div className="mx-auto space-y-8">
+      {/* Header Section */}
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6">
+          <div className="lg:flex lg:items-center lg:justify-between">
+            <div className="lg:w-0 lg:flex-1">
+              <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                Discover Public Repositories
+              </h2>
+              <p className="mt-2 max-w-3xl text-lg text-indigo-100">
+                Explore projects from the community and find inspiration for your next project
+              </p>
+            </div>
+            <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+              <div className="inline-flex rounded-md shadow">
+                <Link to="/repositories/new" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New Repository
+                </Link>
+              </div>
+              {isAuthenticated && (
+                <div className="ml-3 inline-flex rounded-md shadow">
+                  <Link to="/repositories" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-indigo-500 hover:bg-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    My Repositories
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Repository List Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Public Repositories</h1>
         
         {/* Sorting options */}
         <div className="flex items-center">
