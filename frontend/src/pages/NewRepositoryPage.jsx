@@ -58,18 +58,18 @@ function NewRepositoryPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Create a new repository</h1>
+    <div className="max-w-2xl mx-auto px-4 py-8 bg-gh-dark-bg-primary text-gh-dark-text-primary">
+      <h1 className="text-2xl font-bold mb-6 text-gh-dark-text-primary">Create a new repository</h1>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded">
             {error}
           </div>
         )}
         
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
             Repository name *
           </label>
           <input
@@ -78,28 +78,28 @@ function NewRepositoryPage() {
             name="name"
             required
             autoFocus
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue"
             value={formData.name}
             onChange={handleChange}
           />
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gh-dark-text-muted">
             Great repository names are short and memorable.
           </p>
         </div>
         
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="description" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
             Description (optional)
           </label>
           <input
             type="text"
             id="description"
             name="description"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue"
             value={formData.description}
             onChange={handleChange}
           />
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gh-dark-text-muted">
             A short description of your repository.
           </p>
         </div>
@@ -112,13 +112,13 @@ function NewRepositoryPage() {
               name="isPublic"
               checked={formData.isPublic}
               onChange={handleChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-gh-dark-accent-blue focus:ring-gh-dark-accent-blue border-gh-dark-border-primary bg-gh-dark-bg-tertiary rounded"
             />
-            <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="isPublic" className="ml-2 block text-sm text-gh-dark-text-secondary">
               Public
             </label>
           </div>
-          <p className="mt-1 text-sm text-gray-500 ml-6">
+          <p className="mt-1 text-sm text-gray-400 ml-6">
             Anyone can see this repository. You choose who can commit.
           </p>
           
@@ -129,13 +129,13 @@ function NewRepositoryPage() {
               name="isPublic"
               checked={!formData.isPublic}
               onChange={(e) => setFormData({ ...formData, isPublic: !e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-gh-dark-accent-blue focus:ring-gh-dark-accent-blue border-gh-dark-border-primary bg-gh-dark-bg-tertiary rounded"
             />
-            <label htmlFor="isPrivate" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="isPrivate" className="ml-2 block text-sm text-gray-300">
               Private
             </label>
           </div>
-          <p className="mt-1 text-sm text-gray-500 ml-6">
+          <p className="mt-1 text-sm text-gray-400 ml-6">
             You choose who can see and commit to this repository.
           </p>
         </div>
@@ -144,7 +144,7 @@ function NewRepositoryPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 bg-gh-dark-button-primary-bg hover:bg-gh-dark-button-primary-hover text-gh-dark-button-primary-text rounded-md text-sm font-medium disabled:opacity-50 transition-colors duration-200"
           >
             {isLoading ? 'Creating...' : 'Create repository'}
           </button>

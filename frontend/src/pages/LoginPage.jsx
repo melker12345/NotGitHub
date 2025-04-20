@@ -85,19 +85,19 @@ function LoginPage() {
 
 
   return (
-    <div className="flex justify-center items-center min-h-[calc(100vh-16rem)]">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Log in to GitHub Clone</h1>
+    <div className="flex justify-center items-center min-h-[calc(100vh-16rem)] text-gh-dark-text-secondary">
+      <div className="bg-gh-dark-bg-secondary p-8 rounded-lg shadow-md w-full max-w-md border border-gh-dark-border-primary">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gh-dark-text-primary">Log in to GitHub Clone</h1>
         
         {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded">
             {error}
           </div>
         )}
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Email Address
             </label>
             <input
@@ -107,13 +107,13 @@ function LoginPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue"
               placeholder="your.email@example.com"
             />
           </div>
           
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Password
             </label>
             <input
@@ -123,7 +123,7 @@ function LoginPage() {
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue"
               placeholder="••••••••"
             />
           </div>
@@ -135,9 +135,9 @@ function LoginPage() {
               type="checkbox"
               checked={rememberMe}
               onChange={handleRememberMeChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-gh-dark-accent-blue focus:ring-gh-dark-accent-blue border-gh-dark-border-primary bg-gh-dark-bg-tertiary rounded"
             />
-            <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="rememberMe" className="ml-2 block text-sm text-gh-dark-text-secondary">
               Remember me
             </label>
           </div>
@@ -145,7 +145,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gh-dark-button-primary-text bg-gh-dark-accent-blue hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gh-dark-accent-blue transition-colors duration-200 ${
               isLoading ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
@@ -154,9 +154,9 @@ function LoginPage() {
         </form>
         
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gh-dark-text-muted">
             Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/register" className="font-medium text-gh-dark-accent-blue hover:underline transition-colors duration-200">
               Register now
             </Link>
           </p>

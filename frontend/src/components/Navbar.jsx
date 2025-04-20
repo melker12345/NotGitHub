@@ -18,24 +18,24 @@ function Navbar() {
   }
   
   return (
-    <nav className="bg-gray-800 text-white shadow-md">
+    <nav className="bg-gh-dark-bg-secondary text-gh-dark-text-primary shadow-md z-40">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="font-bold text-xl">GitHub Clone</Link>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-4 items-center">
-            <Link to="/" className="px-3 py-2 rounded hover:bg-gray-700">Home</Link>
+            <Link to="/" className="px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Home</Link>
             
             {isAuthenticated ? (
               <>
-                <Link to="/repositories" className="px-3 py-2 rounded hover:bg-gray-700">Repositories</Link>
-                <Link to="/explore" className="px-3 py-2 rounded hover:bg-gray-700">Explore</Link>
+                <Link to="/repositories" className="px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Repositories</Link>
+                <Link to="/explore" className="px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Explore</Link>
                 
                 {/* Profile Dropdown */}
                 <div className="relative">
                   <button 
-                    className="flex items-center px-3 py-2 rounded hover:bg-gray-700"
+                    className="flex items-center px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -48,14 +48,14 @@ function Navbar() {
                   </button>
                   
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                      <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</Link>
-                      <Link to="/profile/ssh-keys" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">SSH Keys</Link>
-                      <Link to="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</Link>
-                      <div className="border-t border-gray-100"></div>
+                    <div className="absolute right-0 mt-2 w-48 bg-gh-dark-bg-secondary rounded-md shadow shadow-slate-950 py-1 z-10 border border-gh-dark-border-primary">
+                      <Link to="/profile" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">Your Profile</Link>
+                      <Link to="/profile/ssh-keys" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">SSH Keys</Link>
+                      <Link to="/settings" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">Settings</Link>
+                      <div className="border-t border-gh-dark-border-primary"></div>
                       <button 
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm font-semibold text-gh-dark-accent-red hover:bg-gh-dark-bg-tertiary"
                       >
                         Sign out
                       </button>
@@ -65,15 +65,15 @@ function Navbar() {
               </>
             ) : (
               <>
-                <Link to="/login" className="px-3 py-2 rounded hover:bg-gray-700">Sign in</Link>
-                <Link to="/register" className="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700">Sign up</Link>
+                <Link to="/login" className="px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Sign in</Link>
+                <Link to="/register" className="px-3 py-2 rounded bg-gh-dark-accent-blue hover:opacity-90">Sign up</Link>
               </>
             )}
           </div>
           
           {/* Mobile Navigation Toggle */}
           <button 
-            className="md:hidden p-2 rounded hover:bg-gray-700"
+            className="md:hidden p-2 rounded hover:bg-gh-dark-bg-tertiary"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg 
@@ -96,26 +96,26 @@ function Navbar() {
         {/* Mobile Navigation Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-2">
-            <Link to="/" className="block px-3 py-2 rounded hover:bg-gray-700">Home</Link>
+            <Link to="/" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Home</Link>
             
             {isAuthenticated ? (
               <>
-                <Link to="/repositories" className="block px-3 py-2 rounded hover:bg-gray-700">Repositories</Link>
-                <Link to="/explore" className="block px-3 py-2 rounded hover:bg-gray-700">Explore</Link>
-                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gray-700">{user?.username || 'Your Profile'}</Link>
-                <Link to="/profile/ssh-keys" className="block px-3 py-2 rounded hover:bg-gray-700">SSH Keys</Link>
-                <Link to="/settings" className="block px-3 py-2 rounded hover:bg-gray-700">Settings</Link>
+                <Link to="/repositories" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Repositories</Link>
+                <Link to="/explore" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Explore</Link>
+                <Link to="/profile" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">{user?.username || 'Your Profile'}</Link>
+                <Link to="/profile/ssh-keys" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">SSH Keys</Link>
+                <Link to="/settings" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Settings</Link>
                 <button 
                   onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 rounded hover:bg-gray-700"
+                  className="block w-full text-left px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary text-gh-dark-accent-red"
                 >
                   Sign out
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="block px-3 py-2 rounded hover:bg-gray-700">Sign in</Link>
-                <Link to="/register" className="block px-3 py-2 rounded hover:bg-gray-700">Sign up</Link>
+                <Link to="/login" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Sign in</Link>
+                <Link to="/register" className="block px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary text-gh-dark-accent-blue">Sign up</Link>
               </>
             )}
           </div>

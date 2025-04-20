@@ -42,26 +42,26 @@ const RepositoryCard = ({ repository }) => {
         <div className="flex-1">
           <div className="flex items-center">
             <h3 className="text-lg font-semibold mr-2">
-              <Link to={repoUrl} className="text-blue-600 hover:underline">
+              <Link to={repoUrl} className="text-gh-dark-accent-blue hover:underline">
                 {name}
               </Link>
             </h3>
             <RepositoryVisibilityBadge isPublic={is_public} size="sm" />
           </div>
           
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-sm text-gh-dark-text-secondary mb-2">
             <Link to={userUrl} className="hover:underline">
               {owner_username}
             </Link>
           </div>
           
           {description && (
-            <p className="text-gray-700 text-sm mb-3">{description}</p>
+            <p className="text-gh-dark-text-secondary text-sm mb-3">{description}</p>
           )}
         </div>
       </div>
       
-      <div className="flex items-center text-xs text-gray-500 mt-2">
+      <div className="flex items-center text-xs text-gh-dark-text-muted mt-2">
         {stars_count > 0 && (
           <div className="flex items-center mr-4">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

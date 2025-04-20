@@ -79,28 +79,28 @@ function SSHKeysPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">SSH Keys</h1>
+    <div className="space-y-6 text-gh-dark-text-secondary">
+      <h1 className="text-2xl font-bold text-gh-dark-text-primary">SSH Keys</h1>
       
       {/* Add New SSH Key Form */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Add New SSH Key</h2>
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border border-gh-dark-border-primary">
+        <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Add New SSH Key</h2>
         
         {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded">
             {error}
           </div>
         )}
         
         {successMessage && (
-          <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-opacity-10 bg-gh-dark-accent-green border border-gh-dark-accent-green text-gh-dark-accent-green px-4 py-3 rounded">
             {successMessage}
           </div>
         )}
         
         <form onSubmit={handleAddKey}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Title
             </label>
             <input
@@ -109,14 +109,14 @@ function SSHKeysPage() {
               type="text"
               value={newKey.name}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue"
               placeholder="e.g., 'Work Laptop' or 'Personal MacBook'"
               required
             />
           </div>
           
           <div className="mb-4">
-            <label htmlFor="public_key" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="public_key" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Public Key
             </label>
             <textarea
@@ -125,11 +125,11 @@ function SSHKeysPage() {
               rows="4"
               value={newKey.public_key}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
               placeholder="Begins with 'ssh-rsa', 'ssh-ed25519', etc."
               required
             />
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gh-dark-text-muted">
               Paste your public SSH key here. You can generate one using <code>ssh-keygen</code> command.
             </p>
           </div>
@@ -137,7 +137,7 @@ function SSHKeysPage() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+              className="px-4 py-2 bg-gh-dark-accent-blue hover:opacity-90 text-gh-dark-button-primary-text rounded-md transition-colors duration-200"
             >
               Add SSH Key
             </button>
@@ -146,35 +146,35 @@ function SSHKeysPage() {
       </div>
       
       {/* SSH Keys List */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Your SSH Keys</h2>
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border border-gh-dark-border-primary">
+        <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Your SSH Keys</h2>
         
         {isLoading ? (
           <div className="flex justify-center items-center h-20">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gh-dark-accent-blue"></div>
           </div>
         ) : keys.length === 0 ? (
-          <div className="bg-gray-50 p-4 rounded-md text-center">
-            <p className="text-gray-600">You don't have any SSH keys yet.</p>
+          <div className="bg-gh-dark-bg-tertiary p-4 rounded-md text-center border border-gh-dark-border-secondary">
+            <p className="text-gh-dark-text-secondary">You don't have any SSH keys yet.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-gh-dark-border-primary">
             {keys.map((key) => (
               <li key={key.id} className="py-4">
                 <div className="flex justify-between">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{key.name}</h3>
-                    <p className="mt-1 text-sm text-gray-600 font-mono truncate">
+                    <h3 className="text-lg font-medium text-gh-dark-text-primary">{key.name}</h3>
+                    <p className="mt-1 text-sm text-gh-dark-text-muted font-mono truncate">
                       {key.fingerprint}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gh-dark-text-muted">
                       Added on {new Date(key.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
                     <button
                       onClick={() => handleDeleteKey(key.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-gh-dark-accent-red hover:opacity-80 transition-colors duration-200"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -189,13 +189,13 @@ function SSHKeysPage() {
       </div>
       
       {/* Help Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Setting Up SSH</h2>
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border border-gh-dark-border-primary">
+        <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Setting Up SSH</h2>
         
-        <div className="prose">
+        <div className="prose prose-invert">
           <h3>Generate an SSH Key Pair</h3>
           <p>Run the following command in your terminal:</p>
-          <div className="bg-gray-100 p-3 rounded-md font-mono text-sm mb-4">
+          <div className="bg-gh-dark-bg-tertiary p-3 rounded-md font-mono text-sm mb-4 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
             ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
           </div>
           
@@ -208,7 +208,7 @@ function SSHKeysPage() {
           
           <h3>Using SSH with Git</h3>
           <p>To clone a repository using SSH:</p>
-          <div className="bg-gray-100 p-3 rounded-md font-mono text-sm">
+          <div className="bg-gray-700 p-3 rounded-md font-mono text-sm text-gray-200 border border-gray-600">
             git clone ssh://git@localhost:2222/username/repo.git
           </div>
         </div>

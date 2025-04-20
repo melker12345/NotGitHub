@@ -11,8 +11,8 @@ export const getVisibilityBadge = (isPublic) => {
   return {
     label: isPublic ? 'Public' : 'Private',
     className: isPublic 
-      ? 'bg-green-100 text-green-800 border border-green-200' 
-      : 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      ? 'bg-opacity-10 bg-gh-dark-accent-green text-gh-dark-accent-green border border-gh-dark-accent-green' 
+      : 'bg-opacity-10 bg-gh-dark-accent-yellow text-gh-dark-accent-yellow border border-gh-dark-accent-yellow',
     icon: isPublic ? 'globe' : 'lock'
   };
 };
@@ -34,10 +34,10 @@ export const getVisibilityDescription = (isPublic) => {
  * @returns {string} - CSS classes for the repository card
  */
 export const getRepositoryCardClasses = (isPublic) => {
-  const baseClasses = 'border rounded-md p-4 mb-4 transition-all duration-200';
+  const baseClasses = 'bg-gh-dark-bg-secondary rounded-md p-4 mb-4 transition-all duration-200 border border-gh-dark-border-primary';
   return isPublic
-    ? `${baseClasses} border-green-200 hover:border-green-300 hover:shadow-md`
-    : `${baseClasses} border-yellow-200 hover:border-yellow-300 hover:shadow-md`;
+    ? `${baseClasses} hover:shadow-md`
+    : `${baseClasses} hover:shadow-md`;
 };
 
 /**

@@ -70,9 +70,9 @@ function ExplorePage() {
   };
 
   return (
-    <div className="mx-auto space-y-8">
+    <div className="mx-auto space-y-8 text-gh-dark-text-secondary">
       {/* Header Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg overflow-hidden">
+      <section className="bg-gradient-to-r from-gh-dark-accent-blue to-indigo-700 rounded-xl shadow-lg overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6">
           <div className="lg:flex lg:items-center lg:justify-between">
             <div className="lg:w-0 lg:flex-1">
@@ -85,7 +85,7 @@ function ExplorePage() {
             </div>
             <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
               <div className="inline-flex rounded-md shadow">
-                <Link to="/repositories/new" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50">
+                <Link to="/repositories/new" className="inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-gh-dark-text-primary hover:bg-indigo-50">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
@@ -109,16 +109,16 @@ function ExplorePage() {
       
       {/* Repository List Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Public Repositories</h1>
+        <h1 className="text-2xl font-bold text-gh-dark-text-primary">Public Repositories</h1>
         
         {/* Sorting options */}
         <div className="flex items-center">
-          <label htmlFor="sort" className="mr-2 text-gray-700">Sort by:</label>
+          <label htmlFor="sort" className="mr-2 text-gh-dark-text-secondary">Sort by:</label>
           <select
             id="sort"
             value={sortOption}
             onChange={handleSortChange}
-            className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border text-gh-dark-text-secondary bg-gh-dark-bg-tertiary border-gh-dark-border-primary rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gh-dark-accent-blue"
           >
             {sortOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -130,7 +130,7 @@ function ExplorePage() {
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
@@ -145,7 +145,7 @@ function ExplorePage() {
       {/* Loading indicator */}
       {loading && (
         <div className="flex justify-center my-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
         </div>
       )}
 
@@ -154,7 +154,7 @@ function ExplorePage() {
         <div className="flex justify-center mt-6">
           <button
             onClick={loadMore}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-gh-dark-accent-blue text-white rounded hover:opacity-90 transition-colors"
           >
             Load More
           </button>
@@ -164,10 +164,10 @@ function ExplorePage() {
       {/* Empty state */}
       {!loading && repositories.length === 0 && !error && (
         <div className="text-center py-8">
-          <p className="text-gray-500">No public repositories found.</p>
+          <p className="text-gh-dark-text-muted">No public repositories found.</p>
           {isAuthenticated && (
             <p className="mt-2">
-              <Link to="/new" className="text-blue-600 hover:underline">
+              <Link to="/new" className="text-gh-dark-accent-blue hover:underline">
                 Create a new repository
               </Link>
             </p>
