@@ -33,8 +33,7 @@ yarn-error.log*
 *.out
 /backend/vendor/
 /backend/Godeps/
-/backend/repositories
-/backend/repositories/*
+
 
 # Add to .gitignore
 backend/ssh_host_key

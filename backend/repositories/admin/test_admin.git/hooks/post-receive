@@ -1,0 +1,6 @@
+#!/bin/sh
+# This hook is called after a successful push
+echo "Repository updated successfully!"
+
+# Make sure the hook exits with success (important for Git client)
+exit 0
