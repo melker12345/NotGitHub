@@ -8,30 +8,26 @@ import (
 	"github-clone/config"
 )
 
-// IssueVote represents a user's vote on an issue (upvote or downvote)
 type IssueVote struct {
 	IssueID   string    `json:"issue_id"`
 	UserID    string    `json:"user_id"`
-	Vote      int       `json:"vote"` // 1 for upvote, -1 for downvote
+	Vote      int       `json:"vote"` 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// VoteInput is used for creating or updating votes
 type VoteInput struct {
-	Vote int `json:"vote"` // 1 for upvote, -1 for downvote
+	Vote int `json:"vote"` 
 }
 
-// VoteOnIssue creates or updates a user's vote on an issue
+// Handles votes for an issue
 func VoteOnIssue(issueID string, userID string, input VoteInput) (*IssueVote, error) {
-	// Validate vote value
 	if input.Vote != 1 && input.Vote != -1 {
 		return nil, errors.New("vote must be either 1 (upvote) or -1 (downvote)")
 	}
 	
 	now := time.Now()
 	
-	// Check if the user has already voted on this issue
 	var existingVote IssueVote
 	var exists bool
 	
@@ -47,13 +43,11 @@ func VoteOnIssue(issueID string, userID string, input VoteInput) (*IssueVote, er
 		if err != sql.ErrNoRows {
 			return nil, err
 		}
-		// No existing vote, create a new one
 		exists = false
 	} else {
 		exists = true
 	}
 	
-	// Create or update the vote
 	vote := &IssueVote{
 		IssueID:   issueID,
 		UserID:    userID,
@@ -95,7 +89,6 @@ func VoteOnIssue(issueID string, userID string, input VoteInput) (*IssueVote, er
 	return vote, nil
 }
 
-// RemoveVote removes a user's vote from an issue
 func RemoveVote(issueID string, userID string) error {
 	result, err := config.DB.Exec(`
 		DELETE FROM issue_votes

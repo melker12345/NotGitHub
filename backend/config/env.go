@@ -7,11 +7,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// LoadEnv loads the environment variables from .env file
+// load the.env file
 func LoadEnv() {
-	// Try to load .env file, but don't fail if it doesn't exist (in production it might be set differently)
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+		log.Println("No .env file found")
 	}
 
 	// Check for required environment variables

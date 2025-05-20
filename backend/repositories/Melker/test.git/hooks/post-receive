@@ -1,3 +1,0 @@
-#!/bin/sh
-# This hook is called after a successful push
-echo "Repository updated successfully!"

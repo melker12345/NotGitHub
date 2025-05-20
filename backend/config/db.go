@@ -10,15 +10,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// DB is the database connection
 var DB *sql.DB
 
-// ConnectDB initializes the database connection
+// Initialize the database connection
 func ConnectDB() error {
-	// Get the database file path from environment variables or use default
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		// Use a default path in the current directory
+		// Use a default if is not set
 		dir, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("failed to get current directory: %w", err)
@@ -26,8 +24,8 @@ func ConnectDB() error {
 		dbPath = filepath.Join(dir, "github-clone.db")
 	}
 
-	// Ensure the directory exists
 	dbDir := filepath.Dir(dbPath)
+	// Create the directory if it doesn't exist 
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
 		return fmt.Errorf("failed to create database directory: %w", err)
 	}
@@ -119,7 +117,7 @@ func ConnectDB() error {
 		return fmt.Errorf("error creating ssh_keys table: %w", err)
 	}
 
-	// Create issues table for tracking repository issues
+	// Issues table 
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS issues (
 			id TEXT PRIMARY KEY,
@@ -139,7 +137,7 @@ func ConnectDB() error {
 		return fmt.Errorf("error creating issues table: %w", err)
 	}
 	
-	// Create issue votes table for tracking user votes on issues
+	// Create issue votes table 
 	_, err = DB.Exec(`
 		CREATE TABLE IF NOT EXISTS issue_votes (
 			issue_id TEXT NOT NULL,
