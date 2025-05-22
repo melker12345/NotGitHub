@@ -9,26 +9,23 @@ import (
 	"github-clone/utils"
 )
 
-// RegisterRequest is the format for registration requests
 type RegisterRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// LoginRequest is the format for login requests
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// AuthResponse is the format for authentication responses
 type AuthResponse struct {
 	Token string             `json:"token"`
 	User  models.UserResponse `json:"user"`
 }
 
-// Register handles user registration
+// Registration of users
 func Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -36,14 +33,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	// Validate input
+    // Check validity of request
 	if req.Username == "" || req.Email == "" || req.Password == "" {
 		http.Error(w, "Username, email, and password are required", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user already exists
 	existingUser, err := models.GetUserByEmail(req.Email)
 	if err != nil {
 		http.Error(w, "Server error checking user existence", http.StatusInternalServerError)
@@ -54,7 +49,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if username is taken
 	userByUsername, err := models.GetUserByUsername(req.Username)
 	if err != nil {
 		http.Error(w, "Server error checking username", http.StatusInternalServerError)
@@ -98,7 +92,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// Login handles user login
+// User login
 func Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -107,33 +101,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find user by email
 	user, err := models.GetUserByEmail(req.Email)
 	if err != nil {
 		http.Error(w, "Server error during login", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if user exists and password is correct
+	// password matching
 	if user == nil || !utils.CheckPasswordHash(req.Password, user.Password) {
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	// Generate token
+	// token
 	token, err := auth.GenerateToken(user.ID)
 	if err != nil {
 		http.Error(w, "Failed to generate authentication token", http.StatusInternalServerError)
 		return
 	}
 
-	// Create response
 	resp := AuthResponse{
 		Token: token,
 		User:  user.ToResponse(),
 	}
 
-	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }

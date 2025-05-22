@@ -26,6 +26,13 @@ function RepositoryDetailPage() {
   useEffect(() => {
     const fetchRepository = async () => {
       try {
+        // Check if we have valid parameters before making the API call
+        if (!username || !reponame) {
+          setError('Invalid repository URL');
+          setIsLoading(false);
+          return;
+        }
+        
         setIsLoading(true);
         const response = await repositoryService.getRepositoryByPath(username, reponame);
         const data = response.data;

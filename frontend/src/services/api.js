@@ -88,27 +88,55 @@ export const repositoryService = {
   // Get all public repositories with pagination
   // Note: Backend doesn't support sorting yet, so we ignore the sort parameter
   getPublicRepositories: (limit = 20, offset = 0, sort = 'newest') => {
-    // Direct fetch to avoid any middleware issues
-    return fetch(`${API_URL}/repositories/public?limit=${limit}&offset=${offset}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      });
+    return api.get('/repositories/public', {
+      params: { limit, offset }
+    }).then(response => {
+      // Ensure each repository has owner information
+      if (response.data && Array.isArray(response.data)) {
+        return response.data.map(repo => {
+          // Make sure owner is properly structured
+          if (!repo.owner && repo.owner_id) {
+            // If we have owner_username but no owner object, create one
+            if (repo.owner_username) {
+              repo.owner = {
+                id: repo.owner_id,
+                username: repo.owner_username,
+                email: repo.owner_email || ''
+              };
+            }
+          }
+          return repo;
+        });
+      }
+      return response.data;
+    });
   },
   
   // Get public repositories for a specific user with pagination
   // Note: Backend doesn't support sorting yet, so we ignore the sort parameter
   getUserPublicRepositories: (username, limit = 20, offset = 0, sort = 'newest') => {
-    // Direct fetch to avoid any middleware issues
-    return fetch(`${API_URL}/repositories/user?username=${username}&limit=${limit}&offset=${offset}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      });
+    return api.get('/repositories/user', {
+      params: { username, limit, offset }
+    }).then(response => {
+      // Ensure each repository has owner information
+      if (response.data && Array.isArray(response.data)) {
+        return response.data.map(repo => {
+          // Make sure owner is properly structured
+          if (!repo.owner && repo.owner_id) {
+            // If we have owner_username but no owner object, create one
+            if (repo.owner_username || username) {
+              repo.owner = {
+                id: repo.owner_id,
+                username: repo.owner_username || username,
+                email: repo.owner_email || ''
+              };
+            }
+          }
+          return repo;
+        });
+      }
+      return response.data;
+    });
   },
   
   // TODO: Implement search functionality in a future commit

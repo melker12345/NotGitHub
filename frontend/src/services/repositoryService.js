@@ -80,8 +80,8 @@ const repositoryService = {
     
     // GitHub-style URLs
     return {
-      https: `http://localhost:8080/${username}/${repoName}.git`,
-      ssh: `ssh://git@localhost:8080/${username}/${repoName}.git`
+      https: `http://localhost:8080/git/${username}/${repoName}.git`,
+      ssh: `ssh://git@localhost:2222/${username}/${repoName}.git`
     };
   },
   
@@ -95,6 +95,46 @@ const repositoryService = {
       baseURL: 'http://localhost:8080/api'
     });
     return response.data;
+  },
+  
+  /**
+   * Get public repositories with pagination and sorting
+   * @param {number} limit Maximum number of repositories to return
+   * @param {number} offset Offset for pagination
+   * @param {string} sort Sort option (newest, oldest, etc.)
+   * @returns {Promise} Promise with the list of public repositories
+   */
+  getPublicRepositories: async (limit = 20, offset = 0, sort = 'newest') => {
+    const response = await api.get('/public/repositories', {
+      baseURL: 'http://localhost:8080/api',
+      params: { limit, offset, sort }
+    });
+    return response.data;
+  },
+  
+  /**
+   * Check if a repository is public
+   * @param {string} username Username of the repository owner
+   * @param {string} repoName Repository name
+   * @returns {Promise<boolean>} Promise resolving to true if repository is public
+   */
+  isRepositoryPublic: async (username, repoName) => {
+    try {
+      const response = await api.get(`/public/${username}/${repoName}`, {
+        baseURL: 'http://localhost:8080/api'
+      });
+      return response.status === 200;
+    } catch (error) {
+      if (error.response && error.response.status === 403) {
+        // 403 means repository exists but is private
+        return false;
+      }
+      if (error.response && error.response.status === 404) {
+        // 404 means repository doesn't exist
+        return false;
+      }
+      throw error;
+    }
   }
 };
 

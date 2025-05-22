@@ -25,12 +25,13 @@ const RepositoryCard = ({ repository }) => {
     owner
   } = repository;
   
-  // Extract owner username safely
-  const owner_username = owner?.username || 'unknown';
+  const owner_username = owner?.username || repository.owner_username || '';
   
   const cardClasses = getRepositoryCardClasses(is_public);
-  const repoUrl = `/${owner_username}/${name}`;
-  const userUrl = `/${owner_username}`;
+  // Only create valid URLs if we have a valid username
+  const hasValidOwner = owner_username && owner_username.trim() !== '';
+  const repoUrl = hasValidOwner ? `/${owner_username}/${name}` : '#';
+  const userUrl = hasValidOwner ? `/${owner_username}` : '#';
   
   // Format dates
   const updatedTimeAgo = updated_at ? formatDistanceToNow(new Date(updated_at), { addSuffix: true }) : '';

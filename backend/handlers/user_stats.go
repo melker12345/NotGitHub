@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github-clone/utils"
-	"github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
-// UserStats represents statistics for a user
 type UserStats struct {
 	TotalRepositories  int    `json:"total_repositories"`
 	PublicRepositories int    `json:"public_repositories"`
@@ -22,19 +22,16 @@ type UserStats struct {
 	JoinedDate         string `json:"joined_date"`
 }
 
-// GetUserStats handles the request to get user statistics
+// GetUserStats handles the requests to get user statistics
 func GetUserStats(w http.ResponseWriter, r *http.Request) {
-	// Extract username from URL
 	vars := mux.Vars(r)
 	username := vars["username"]
 
-	// Return 404 if username is empty
 	if username == "" {
 		http.Error(w, "Username is required", http.StatusBadRequest)
 		return
 	}
 
-	// Get user stats
 	stats, err := getUserStats(username)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error getting user stats: %v", err), http.StatusInternalServerError)
@@ -60,7 +57,7 @@ func getUserStats(username string) (UserStats, error) {
 
 	// Count repositories
 	stats.TotalRepositories = len(repos)
-	
+
 	// Count public repositories
 	for _, repo := range repos {
 		if repo.IsPublic {
@@ -114,7 +111,7 @@ func getUserStats(username string) (UserStats, error) {
 
 // countLinesOfCode counts the lines of code in a repository using git commands
 func countLinesOfCode(repoPath string) (int, error) {
-	// For bare repositories, we need to use git commands to get the stats
+	// For bare repositories, we to use git commands to get the stats
 	// This command gets the latest commit and counts total lines in all files
 	cmd := exec.Command("git", "-C", repoPath, "ls-tree", "-r", "HEAD", "--name-only")
 	files, err := cmd.Output()
@@ -132,7 +129,6 @@ func countLinesOfCode(repoPath string) (int, error) {
 			continue
 		}
 
-		// Skip non-code files
 		ext := strings.ToLower(filepath.Ext(filename))
 		if !isCodeFile(ext) {
 			continue
@@ -142,11 +138,9 @@ func countLinesOfCode(repoPath string) (int, error) {
 		showCmd := exec.Command("git", "-C", repoPath, "show", fmt.Sprintf("HEAD:%s", filename))
 		content, err := showCmd.Output()
 		if err != nil {
-			// Skip files that can't be shown
 			continue
 		}
 
-		// Count lines
 		lines := len(strings.Split(string(content), "\n"))
 		totalLines += lines
 	}
@@ -154,7 +148,6 @@ func countLinesOfCode(repoPath string) (int, error) {
 	return totalLines, nil
 }
 
-// isCodeFile determines if a file extension is likely a code file
 func isCodeFile(ext string) bool {
 	codeExtensions := []string{
 		".go", ".js", ".jsx", ".ts", ".tsx", ".html", ".css", ".scss",
@@ -171,7 +164,6 @@ func isCodeFile(ext string) bool {
 	return false
 }
 
-// countFileLines counts the number of lines in a file
 func countFileLines(filePath string) (int, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {

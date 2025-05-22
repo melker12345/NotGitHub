@@ -37,17 +37,39 @@ function ExplorePage() {
       // Use the API service to fetch repositories
       const data = await repositoryService.getPublicRepositories(limit, offset, sortOption);
       
+      // Process the data to ensure each repository has proper owner information
+      const processedData = data.filter(repo => {
+        // Filter out repositories with missing critical information
+        const hasOwnerInfo = repo.owner?.username || repo.owner_username;
+        if (!hasOwnerInfo) {
+          console.warn('Filtering out repository with missing owner information:', repo.name);
+          return false;
+        }
+        return true;
+      }).map(repo => {
+        // Make sure each repository has a proper owner object
+        if (!repo.owner || !repo.owner.username) {
+          // Create a proper owner object using available data
+          repo.owner = {
+            id: repo.owner_id || '',
+            username: repo.owner_username || '',
+            email: repo.owner_email || ''
+          };
+        }
+        return repo;
+      });
+      
       // If we get fewer results than the limit, we've reached the end
-      if (data.length < limit) {
+      if (processedData.length < limit) {
         setHasMore(false);
       } else {
         setHasMore(true);
       }
       
       if (page === 0) {
-        setRepositories(data);
+        setRepositories(processedData);
       } else {
-        setRepositories(prev => [...prev, ...data]);
+        setRepositories(prev => [...prev, ...processedData]);
       }
     } catch (err) {
       console.error('Error fetching public repositories:', err);

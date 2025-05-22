@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { repositoryService } from '../../services/api';
+import RepositoryVisibilityBadge from '../RepositoryVisibilityBadge';
+import { formatDistanceToNow } from 'date-fns';
 
 function RepositoriesList() {
   const [repositories, setRepositories] = useState([]);
