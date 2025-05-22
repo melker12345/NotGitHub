@@ -12,6 +12,7 @@ import SSHKeysPage from './pages/SSHKeysPage';
 import WelcomePage from './pages/WelcomePage';
 import ExplorePage from './pages/ExplorePage';
 import UserProfilePage from './pages/UserProfilePage';
+import UserSettingsPage from './pages/UserSettingsPage';
 import RepositoryIssuesPage from './pages/RepositoryIssuesPage';
 import CreateIssuePage from './pages/CreateIssuePage';
 import IssueDetailPage from './pages/IssueDetailPage';
@@ -66,7 +67,9 @@ function App() {
               <Route path="/profile" element={<PrivateRoute>
                 <ProfileRedirect />
               </PrivateRoute>} />
-              <Route path="/settings" element={<HomePage />} />
+              <Route path="/settings" element={<PrivateRoute>
+                <UserSettingsPage />
+              </PrivateRoute>} />
               {/* User profile page - must come after the repository routes to avoid conflicts */}
               <Route path="/:username" element={<UserProfilePage />} />
               <Route path="/profile/ssh-keys" element={
