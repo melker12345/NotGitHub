@@ -175,12 +175,12 @@ function IssueDetailPage() {
         </Link>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-gh-dark-bg-secondary rounded-lg shadow-md overflow-hidden border border-gh-dark-border-primary">
+        <div className="p-6 border-b border-gh-dark-border-primary">
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center space-x-2 mb-2">
-                <span className={`inline-block w-3 h-3 rounded-full ${issue.is_open ? 'bg-green-500' : 'bg-purple-600'}`}></span>
+                <span className={`inline-block w-3 h-3 rounded-full ${issue.is_open ? 'bg-gh-dark-accent-blue' : 'bg-gh-dark-accent-red'}`}></span>
                 <span className="text-sm font-medium">
                   {issue.is_open ? 'Open' : 'Closed'}
                 </span>
@@ -193,9 +193,9 @@ function IssueDetailPage() {
                 {!issue.is_open && issue.closed_at && (
                   <span className="ml-3">
                     • Closed by {issue.closed_by && typeof issue.closed_by === 'object' && issue.closed_by.Valid 
-                      ? <Link to={`/${issue.closed_by.String}`} className="text-blue-600 hover:underline">{issue.closed_by.String}</Link>
+                      ? <Link to={`/${issue.closed_by.String}`} className="text-gh-dark-accent-blue hover:underline">{issue.closed_by.String}</Link>
                       : typeof issue.closed_by === 'string'
-                        ? <Link to={`/${issue.closed_by}`} className="text-blue-600 hover:underline">{issue.closed_by}</Link>
+                        ? <Link to={`/${issue.closed_by}`} className="text-gh-dark-accent-blue hover:underline">{issue.closed_by}</Link>
                         : <span>unknown user</span>
                     } on {formatDate(issue.closed_at)}
                   </span>
@@ -209,8 +209,8 @@ function IssueDetailPage() {
                 disabled={isSubmitting}
                 className={`px-4 py-2 rounded-md text-white ${
                   issue.is_open 
-                    ? 'bg-purple-600 hover:bg-purple-700' 
-                    : 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-gh-dark-accent-red hover:opacity-90' 
+                    : 'bg-gh-dark-accent-blue hover:opacity-90'
                 } ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
                 {issue.is_open ? 'Close issue' : 'Reopen issue'}
@@ -226,7 +226,7 @@ function IssueDetailPage() {
                 <button
                   onClick={() => handleVote(1)}
                   disabled={isSubmitting}
-                  className={`p-1 rounded ${userVote === 1 ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
+                  className={`p-1 rounded ${userVote === 1 ? 'bg-gh-dark-accent-blue bg-opacity-20 text-gh-dark-accent-blue' : 'hover:bg-gh-dark-bg-tertiary'}`}
                   title="Upvote"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,7 +237,7 @@ function IssueDetailPage() {
                 <button
                   onClick={() => handleVote(-1)}
                   disabled={isSubmitting}
-                  className={`p-1 rounded ${userVote === -1 ? 'bg-red-100 text-red-700' : 'hover:bg-gray-100'}`}
+                  className={`p-1 rounded ${userVote === -1 ? 'bg-gh-dark-accent-red bg-opacity-20 text-gh-dark-accent-red' : 'hover:bg-gh-dark-bg-tertiary'}`}
                   title="Downvote"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -252,7 +252,7 @@ function IssueDetailPage() {
                 {issue.description ? (
                   <p className="whitespace-pre-wrap">{issue.description}</p>
                 ) : (
-                  <p className="text-gray-500 italic">No description provided.</p>
+                  <p className="text-gh-dark-text-secondary italic">No description provided.</p>
                 )}
               </div>
             </div>

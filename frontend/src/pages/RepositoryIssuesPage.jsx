@@ -121,7 +121,7 @@ function RepositoryIssuesPage() {
         {canCreateIssue() && (
           <Link
             to={`/${username}/${reponame}/issues/new`}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            className="px-4 py-2 bg-gh-dark-accent-blue text-white rounded hover:opacity-90 transition-colors"
           >
             New Issue
           </Link>
@@ -129,59 +129,59 @@ function RepositoryIssuesPage() {
       </div>
       
       {/* Issue state tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-gh-dark-border-primary mb-4">
         <button
           onClick={() => changeTab('open')}
           className={`py-2 px-4 font-medium text-sm ${activeTab === 'open' 
-            ? 'border-b-2 border-blue-500 text-blue-600' 
-            : 'text-gray-500 hover:text-gray-700'}`}
+            ? 'border-b-2 border-gh-dark-accent-blue text-gh-dark-accent-blue' 
+            : 'text-gh-dark-text-secondary hover:text-gh-dark-text-primary'}`}
         >
           <span className="flex items-center">
-            <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+            <span className="w-3 h-3 rounded-full bg-gh-dark-accent-blue mr-2"></span>
             Open
           </span>
         </button>
         <button
           onClick={() => changeTab('closed')}
           className={`py-2 px-4 font-medium text-sm ${activeTab === 'closed' 
-            ? 'border-b-2 border-blue-500 text-blue-600' 
-            : 'text-gray-500 hover:text-gray-700'}`}
+            ? 'border-b-2 border-gh-dark-accent-blue text-gh-dark-accent-blue' 
+            : 'text-gh-dark-text-secondary hover:text-gh-dark-text-primary'}`}
         >
           <span className="flex items-center">
-            <span className="w-3 h-3 rounded-full bg-purple-600 mr-2"></span>
+            <span className="w-3 h-3 rounded-full bg-gh-dark-accent-red mr-2"></span>
             Closed
           </span>
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-gh-dark-bg-tertiary border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-gh-dark-bg-secondary rounded-lg shadow overflow-hidden border border-gh-dark-border-primary">
         {issues.length > 0 ? (
           <div>
             {issues.map(issue => (
-              <div key={issue.id} className="border-b border-gray-200 last:border-b-0">
+              <div key={issue.id} className="border-b border-gh-dark-border-primary last:border-b-0">
                 <Link
                   to={`/${username}/${reponame}/issues/${issue.id}`}
-                  className="block p-4 hover:bg-gray-50 transition-colors"
+                  className="block p-4 hover:bg-gh-dark-bg-tertiary transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className={`inline-block w-3 h-3 rounded-full ${issue.is_open ? 'bg-green-500' : 'bg-purple-600'}`}></span>
-                        <h3 className="text-lg font-semibold text-blue-600">{issue.title}</h3>
+                        <span className={`inline-block w-3 h-3 rounded-full ${issue.is_open ? 'bg-gh-dark-accent-blue' : 'bg-gh-dark-accent-red'}`}></span>
+                        <h3 className="text-lg font-semibold text-gh-dark-accent-blue">{issue.title}</h3>
                       </div>
-                      <p className="text-gray-600 mt-1 text-sm">
+                      <p className="text-gh-dark-text-secondary mt-1 text-sm">
                         {issue.is_open ? 'Opened' : 'Closed'} on {formatDate(issue.created_at)} by {issue.created_by}
                       </p>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="text-gray-600 text-sm">
-                        <span className={`${issue.vote_count > 0 ? 'text-green-600' : issue.vote_count < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      <div className="text-gh-dark-text-secondary text-sm">
+                        <span className={`${issue.vote_count > 0 ? 'text-gh-dark-accent-blue' : issue.vote_count < 0 ? 'text-gh-dark-accent-red' : 'text-gh-dark-text-secondary'}`}>
                           {issue.vote_count > 0 ? '+' : ''}{issue.vote_count}
                         </span>
                       </div>
@@ -192,10 +192,10 @@ function RepositoryIssuesPage() {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gh-dark-text-secondary">
             {loading ? (
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-text-secondary"></div>
               </div>
             ) : (
               <>
@@ -208,7 +208,7 @@ function RepositoryIssuesPage() {
                     : "There are no closed issues for this repository yet."}
               </p>
               {error && (
-                <p className="text-xs text-gray-500 mt-2">{error}</p>
+                <p className="text-xs text-gh-dark-text-secondary mt-2">{error}</p>
               )}
               </>
             )}
@@ -221,7 +221,7 @@ function RepositoryIssuesPage() {
         <div className="flex justify-center mt-6">
           <button
             onClick={loadMore}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-gh-dark-accent-blue text-white rounded hover:opacity-90 transition-colors"
           >
             Load More
           </button>
@@ -231,7 +231,7 @@ function RepositoryIssuesPage() {
       {/* Loading indicator */}
       {loading && issues.length > 0 && (
         <div className="flex justify-center my-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
         </div>
       )}
     </div>
