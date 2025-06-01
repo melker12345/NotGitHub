@@ -4,6 +4,8 @@ import { repositoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
 import NumberSpinner from '../components/NumberSpinner';
+import RepositoryListSection from '../components/RepositoryListSection';
+import RepositoryCard from '../components/RepositoryCard';
 
 function UserProfilePage() {
   const { username } = useParams();
@@ -76,7 +78,7 @@ function UserProfilePage() {
   const isOwnProfile = isAuthenticated && user && user.username === username;
 
   return (
-    <div className="container mx-auto px-4 py-8 text-gray-200">
+    <div className="container mx-auto px-4 py-8 text-gh-dark-text-primary">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">{username}</h1>
@@ -137,79 +139,15 @@ function UserProfilePage() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-white">
-          {isOwnProfile ? 'Your Repositories' : `${username}'s Repositories`}
-        </h2>
-        
-        <div className="grid grid-cols-1 gap-4">
-          {repositories.map(repo => (
-            <div key={repo.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    <Link 
-                      to={`/${username}/${repo.name}`} 
-                      className="text-blue-500 hover:underline"
-                    >
-                      {repo.name}
-                    </Link>
-                  </h3>
-                  <p className="text-gray-400 mt-1">{repo.description || 'No description provided'}</p>
-                </div>
-                <div className="flex items-center">
-                  <span className={`px-2 py-1 text-xs rounded-full ${repo.is_public ? 'bg-green-800 text-green-200' : 'bg-yellow-800 text-yellow-200'}`}>
-                    {repo.is_public ? 'Public' : 'Private'}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 text-sm text-gray-400">
-                <span>Updated on {formatDate(repo.updated_at || repo.created_at)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {loading && (
-          <div className="flex justify-center my-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-
-        {!loading && hasMore && (
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={loadMore}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Load More
-            </button>
-          </div>
-        )}
-
-        {!loading && repositories.length === 0 && !error && (
-          <div className="text-center py-8">
-            <p className="text-gray-400">
-              {isOwnProfile 
-                ? "You don't have any repositories yet." 
-                : `${username} doesn't have any public repositories yet.`}
-            </p>
-            {isOwnProfile && (
-              <p className="mt-2">
-                <Link to="/repositories/new" className="text-blue-500 hover:underline">
-                  Create a new repository
-                </Link>
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      <RepositoryListSection
+        title={isOwnProfile ? 'Your Repositories' : `${username}'s Repositories`}
+        loading={loading}
+        error={error}
+        repositories={repositories}
+        showSort={false}
+        loadMore={loadMore}
+        hasMore={hasMore}
+      />
     </div>
   );
 }

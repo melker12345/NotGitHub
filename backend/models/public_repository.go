@@ -6,9 +6,14 @@ import (
 
 // GetPublicRepositories fetches all public repositories with pagination
 // If requestingUserID is provided, it will include private repositories owned by that user
-func GetPublicRepositories(limit, offset int, requestingUserID string) ([]*Repository, error) {
+func GetPublicRepositories(limit, offset int, requestingUserID string, sort string) ([]*Repository, error) {
 	var query string
 	var args []interface{}
+
+	orderByClause := "ORDER BY r.created_at DESC" // Default to newest
+	if sort == "oldest" {
+		orderByClause = "ORDER BY r.created_at ASC"
+	}
 
 	if requestingUserID != "" {
 		// If user is authenticated, show public repos + their own private repos
@@ -18,7 +23,7 @@ func GetPublicRepositories(limit, offset int, requestingUserID string) ([]*Repos
 			FROM repositories r
 			LEFT JOIN users u ON r.owner_id = u.id
 			WHERE r.is_public = 1 OR r.owner_id = ?
-			ORDER BY r.created_at DESC
+			` + orderByClause + `
 			LIMIT ? OFFSET ?
 		`
 		args = []interface{}{requestingUserID, limit, offset}
@@ -30,7 +35,7 @@ func GetPublicRepositories(limit, offset int, requestingUserID string) ([]*Repos
 			FROM repositories r
 			LEFT JOIN users u ON r.owner_id = u.id
 			WHERE r.is_public = 1
-			ORDER BY r.created_at DESC
+			` + orderByClause + `
 			LIMIT ? OFFSET ?
 		`
 		args = []interface{}{limit, offset}
@@ -72,7 +77,7 @@ func GetPublicRepositories(limit, offset int, requestingUserID string) ([]*Repos
 
 // GetUserPublicRepositories fetches public repositories for a specific user
 // If requestingUserID matches the username's user ID, it will include private repositories
-func GetUserPublicRepositories(username string, limit, offset int, requestingUserID string) ([]*Repository, error) {
+func GetUserPublicRepositories(username string, limit, offset int, requestingUserID string, sort string) ([]*Repository, error) {
 	// First, get the user ID for the username
 	var userID string
 	err := config.DB.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
@@ -83,6 +88,11 @@ func GetUserPublicRepositories(username string, limit, offset int, requestingUse
 	var query string
 	var args []interface{}
 
+	orderByClause := "ORDER BY r.created_at DESC" // Default to newest
+	if sort == "oldest" {
+		orderByClause = "ORDER BY r.created_at ASC"
+	}
+
 	if requestingUserID == userID {
 		// If the requesting user is the owner, show all repos (public and private)
 		query = `
@@ -91,7 +101,7 @@ func GetUserPublicRepositories(username string, limit, offset int, requestingUse
 			FROM repositories r
 			LEFT JOIN users u ON r.owner_id = u.id
 			WHERE r.owner_id = ?
-			ORDER BY r.created_at DESC
+			` + orderByClause + `
 			LIMIT ? OFFSET ?
 		`
 		args = []interface{}{userID, limit, offset}
@@ -103,7 +113,7 @@ func GetUserPublicRepositories(username string, limit, offset int, requestingUse
 			FROM repositories r
 			LEFT JOIN users u ON r.owner_id = u.id
 			WHERE r.owner_id = ? AND r.is_public = 1
-			ORDER BY r.created_at DESC
+			` + orderByClause + `
 			LIMIT ? OFFSET ?
 		`
 		args = []interface{}{userID, limit, offset}

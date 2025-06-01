@@ -89,7 +89,7 @@ export const repositoryService = {
   // Note: Backend doesn't support sorting yet, so we ignore the sort parameter
   getPublicRepositories: (limit = 20, offset = 0, sort = 'newest') => {
     return api.get('/repositories/public', {
-      params: { limit, offset }
+      params: { limit, offset, sort }
     }).then(response => {
       // Ensure each repository has owner information
       if (response.data && Array.isArray(response.data)) {
@@ -116,7 +116,7 @@ export const repositoryService = {
   // Note: Backend doesn't support sorting yet, so we ignore the sort parameter
   getUserPublicRepositories: (username, limit = 20, offset = 0, sort = 'newest') => {
     return api.get('/repositories/user', {
-      params: { username, limit, offset }
+      params: { username, limit, offset, sort }
     }).then(response => {
       // Ensure each repository has owner information
       if (response.data && Array.isArray(response.data)) {

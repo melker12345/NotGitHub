@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -9,6 +9,7 @@ function Navbar() {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const profileMenuTimeoutRef = useRef(null);
   
   const handleLogout = () => {
     logout();
@@ -33,10 +34,23 @@ function Navbar() {
                 <Link to="/explore" className="px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary">Explore</Link>
                 
                 {/* Profile Dropdown */}
-                <div className="relative">
+                <div 
+                  className="relative"
+                  onMouseEnter={() => {
+                    if (profileMenuTimeoutRef.current) {
+                      clearTimeout(profileMenuTimeoutRef.current);
+                      profileMenuTimeoutRef.current = null;
+                    }
+                    setIsProfileMenuOpen(true);
+                  }}
+                  onMouseLeave={() => {
+                    profileMenuTimeoutRef.current = setTimeout(() => {
+                      setIsProfileMenuOpen(false);
+                    }, 300); // 300ms delay, adjust as needed
+                  }}
+                >
                   <button 
                     className="flex items-center px-3 py-2 rounded hover:bg-gh-dark-bg-tertiary"
-                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -48,7 +62,7 @@ function Navbar() {
                   </button>
                   
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-gh-dark-bg-secondary rounded-md shadow shadow-slate-950 py-1 z-10 border border-gh-dark-border-primary">
+                    <div className="absolute right-0 mt-0 w-48 bg-gh-dark-bg-secondary rounded-md shadow shadow-slate-950 py-1 z-10 border border-gh-dark-border-primary">
                       <Link to="/profile" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">Your Profile</Link>
                       <Link to="/profile/ssh-keys" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">SSH Keys</Link>
                       <Link to="/settings" className="block px-4 py-2 text-sm hover:bg-gh-dark-bg-tertiary">Settings</Link>

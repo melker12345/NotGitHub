@@ -3,11 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { repositoryService } from '../services/api';
 import RepositoryCard from '../components/RepositoryCard';
+import RepositoryListSection from '../components/RepositoryListSection';
 
 function HomePage() {
   const { isAuthenticated } = useAuth();
   const [publicRepos, setPublicRepos] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   // Fetch public repositories for all users
   useEffect(() => {
@@ -37,10 +39,13 @@ function HomePage() {
         });
         
         setPublicRepos(processedData);
-        setLoading(false);
+        setError('');
       })
-      .catch(error => {
-        console.error('Error fetching public repositories:', error);
+      .catch(err => {
+        console.error('Error fetching public repositories:', err);
+        setError('Failed to load public repositories.');
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -78,25 +83,14 @@ function HomePage() {
       )}
       
       {/* Repository List */}
-      <section className="bg-gray-800 text-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gh-dark-text-primary">Public Repositories</h2>
-        </div>
-        
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
-          </div>
-        ) : publicRepos.length > 0 ? (
-          <div className="space-y-4">
-            {publicRepos.map(repo => (
-              <RepositoryCard key={repo.id} repository={repo} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-gh-dark-text-muted text-center py-8">No public repositories found</p>
-        )}
-      </section>
+      <RepositoryListSection
+        title="Public Repositories"
+        loading={loading}
+        error={error}
+        repositories={publicRepos}
+        showSort={false} // HomePage doesn't have sorting for this section
+        showLoadMore={false} // HomePage doesn't have load more for this section
+      />
     </div>
   );
 }

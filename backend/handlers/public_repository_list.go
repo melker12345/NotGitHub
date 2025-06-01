@@ -8,16 +8,16 @@ import (
 	"github-clone/models"
 )
 
-// GetPublicRepositories handles retrieving all public repositories
-// This handler doesn't require authentication
 func GetPublicRepositories(w http.ResponseWriter, r *http.Request) {
 	// Get optional pagination parameters
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
+	sortStr := r.URL.Query().Get("sort") // Get sort parameter
 
 	// Default values
 	limit := 20
 	offset := 0
+	sort := "newest" // Default sort option
 
 	// Parse limit if provided
 	if limitStr != "" {
@@ -35,12 +35,17 @@ func GetPublicRepositories(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Set sort option if provided
+	if sortStr != "" {
+		sort = sortStr
+	}
+
 	// Get optional user ID for personalized results
 	// If user is authenticated, we can show private repos they have access to
 	userID := getUserIDOptional(r)
 
 	// Get the repositories
-	repos, err := models.GetPublicRepositories(limit, offset, userID)
+	repos, err := models.GetPublicRepositories(limit, offset, userID, sort)
 	if err != nil {
 		http.Error(w, "Failed to retrieve public repositories", http.StatusInternalServerError)
 		return
@@ -63,10 +68,12 @@ func GetUserPublicRepositories(w http.ResponseWriter, r *http.Request) {
 	// Get optional pagination parameters
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
+	sortStr := r.URL.Query().Get("sort")
 
 	// Default values
 	limit := 20
 	offset := 0
+	sort := "newest" // default sort option
 
 	// Parse limit if provided
 	if limitStr != "" {
@@ -84,12 +91,17 @@ func GetUserPublicRepositories(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Set sort option if provided
+	if sortStr != "" {
+		sort = sortStr
+	}
+
 	// Get optional user ID for personalized results
 	// If user is authenticated and viewing their own profile, we can show private repos
 	requestingUserID := getUserIDOptional(r)
 
 	// Get the repositories
-	repos, err := models.GetUserPublicRepositories(username, limit, offset, requestingUserID)
+	repos, err := models.GetUserPublicRepositories(username, limit, offset, requestingUserID, sort)
 	if err != nil {
 		http.Error(w, "Failed to retrieve user's public repositories", http.StatusInternalServerError)
 		return

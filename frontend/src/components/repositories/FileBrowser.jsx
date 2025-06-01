@@ -350,31 +350,31 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <div className="flex flex-col space-y-4 text-gray-200">
+    <div className="flex flex-col space-y-6 text-gh-dark-text-primary">
       {repository && (
-        <div className="flex items-center space-x-2 mb-4 text-gray-200">
-          <Link to={`/${username}/${reponame}`} className="text-blue-500 hover:underline">
+        <div className="flex items-center space-x-2 text-lg text-gh-dark-text-secondary">
+          <Link to={`/${username}/${reponame}`} className="font-medium text-gh-dark-accent-blue hover:underline hover:text-gh-dark-accent-blue-hover">
             {reponame}
           </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-300">Files</span>
+          <span className="text-gh-dark-text-muted">/</span>
+          <span className="text-gh-dark-text-primary">Files</span>
           {currentPath && (
             <>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-300">{currentPath}</span>
+              <span className="text-gh-dark-text-muted">/</span>
+              <span className="text-gh-dark-text-primary font-mono text-sm bg-gh-dark-bg-tertiary px-2 py-0.5 rounded-md">{currentPath}</span>
             </>
           )}
         </div>
       )}
 
       {/* Breadcrumb navigation */}
-      <div className="flex items-center text-sm text-gray-300 bg-gray-800 px-3 py-2 rounded border border-gray-600">
+      <div className="flex items-center text-sm text-gh-dark-text-secondary bg-gh-dark-bg-secondary px-4 py-2.5 rounded-lg border border-gh-dark-border-primary shadow-sm">
         {breadcrumbs.map((crumb, index) => (
           <div key={crumb.path} className="flex items-center">
-            {index > 0 && <span className="mx-2">/</span>}
+            {index > 0 && <span className="mx-2 text-gh-dark-text-muted">/</span>}
             <button
               onClick={() => handleNavigate(crumb.path)}
-              className="hover:text-blue-400 hover:underline transition-colors duration-200"
+              className="hover:text-gh-dark-accent-blue hover:underline transition-colors duration-200 px-1 rounded hover:bg-gh-dark-bg-hover"
             >
               {crumb.name}
             </button>
@@ -383,21 +383,21 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
       </div>
 
       {/* Repository contents */}
-      <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 rounded-lg">
+      <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
         {/* Directory listing */}
-        <div className="w-full md:w-2/5 bg-gray-700 shadow rounded-lg overflow-hidden border border-gray-800 ">
+        <div className="w-full md:w-2/5 bg-gh-dark-bg-secondary shadow-md rounded-lg overflow-hidden border border-gh-dark-border-primary">
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
             </div>
           ) : (!contents || contents.length === 0) ? (
-            <div className="p-6 text-center text-gray-400">
+            <div className="p-6 text-center text-gh-dark-text-muted">
               {error || `No files found in "${currentPath || '/'}" directory. If you've recently pushed files, please refresh.`}
               {username && reponame && (
                 <div className="mt-4">
                   <button 
                     onClick={() => fetchContents()} 
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+                    className="px-4 py-2 bg-gh-dark-accent-blue text-gh-dark-text-primary rounded hover:bg-gh-dark-accent-blue-hover transition-colors duration-200"
                   >
                     Refresh Repository
                   </button>
@@ -405,26 +405,26 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-700 rounded-lg">
-              <table className="min-w-full  rounded-lg">
-                <thead className="bg-gray-800 sticky top-0 z-10">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gh-dark-bg-secondary sticky top-0 z-10">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gh-dark-text-secondary uppercase tracking-wider border-b-2 border-gh-dark-border-primary">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gh-dark-text-secondary uppercase tracking-wider border-b-2 border-gh-dark-border-primary">
                       Last Commit
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-b border-gray-600">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gh-dark-text-secondary uppercase tracking-wider border-b-2 border-gh-dark-border-primary">
                       Size
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                <tbody className="bg-gh-dark-bg-primary divide-y divide-gh-dark-border-secondary">
                   {Array.isArray(contents) && contents.length > 0 ? (
                     contents.map((item, index) => (
-                      <tr key={item.path || item.Path || `${item.name || item.Name}-${index}`} className="hover:bg-gray-700 transition-colors duration-200">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <tr key={item.path || item.Path || `${item.name || item.Name}-${index}`} className="hover:bg-gh-dark-bg-hover transition-colors duration-150">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
                           {item.Type === 'dir' || item.type === 'dir' ? (
                             <button
                               onClick={() => {
@@ -460,9 +460,9 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                                 // This ensures we don't get path conflicts and let React Router handle the navigation properly
                                 // DON'T manually fetch contents here - let the useEffect hook handle it
                               }}
-                              className="flex items-center text-blue-500 hover:text-blue-400 hover:underline"
+                              className="flex items-center text-gh-dark-accent-blue hover:text-gh-dark-accent-blue-hover hover:underline focus:outline-none"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gh-dark-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                               </svg>
                               {item.name || item.Name}
@@ -480,22 +480,22 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                                   setError('File path information is missing');
                                 }
                               }}
-                              className="flex items-center text-gray-300 hover:text-blue-400 hover:underline transition-colors duration-200"
+                              className="flex items-center text-gh-dark-text-primary hover:text-gh-dark-accent-blue hover:underline focus:outline-none transition-colors duration-150"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gh-dark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                               {item.name || item.Name}
                             </button>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gh-dark-text-secondary">
                           {(item.LastCommit || item.last_commit) ? (
                             <div className="flex flex-col">
-                              <span className="truncate" style={{ maxWidth: '200px' }}>
+                              <span className="truncate text-gh-dark-text-primary" style={{ maxWidth: '200px' }}>
                                 {(item.LastCommit && item.LastCommit.Message) || (item.last_commit && item.last_commit.message) || ''}
                               </span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gh-dark-text-muted">
                                 {formatDate((item.LastCommit && item.LastCommit.Timestamp) || (item.last_commit && item.last_commit.timestamp))}
                               </span>
                             </div>
@@ -503,14 +503,14 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                             '-'
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gh-dark-text-secondary">
                           {(item.Type === 'file' || item.type === 'file') ? formatFileSize(item.Size || item.size || 0) : '-'}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="3" className="px-6 py-4 text-center text-gray-400">
+                      <td colSpan="3" className="px-6 py-4 text-center text-gh-dark-text-muted">
                         No files found in this repository
                       </td>
                     </tr>
@@ -522,21 +522,21 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
         </div>
 
         {/* File/Folder preview */}
-        <div className="w-full lg:w-3/5 bg-gray-800 shadow-md rounded-lg overflow-hidden border border-gray-700">
+        <div className="w-full md:w-3/5 bg-gh-dark-bg-primary shadow-md rounded-lg overflow-hidden border border-gh-dark-border-primary">
           {selectedFile ? (
             <div className="h-full flex flex-col">
-              <div className="bg-gray-700 px-4 py-3 border-b border-gray-600 sticky top-0 z-10">
+              <div className="bg-gh-dark-bg-secondary px-4 py-3 border-b border-gh-dark-border-secondary sticky top-0 z-10">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium truncate flex items-center text-gray-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <h3 className="font-medium truncate flex items-center text-gh-dark-text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gh-dark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     {selectedFile.name || selectedFile.Name || 'Unnamed file'}
                   </h3>
-                  <span className="text-sm bg-gray-600 text-gray-200 px-2 py-1 rounded-full font-mono">{formatFileSize(selectedFile.size || selectedFile.Size || 0)}</span>
+                  <span className="text-sm bg-gh-dark-bg-tertiary text-gh-dark-text-primary px-2 py-1 rounded-full font-mono">{formatFileSize(selectedFile.size || selectedFile.Size || 0)}</span>
                 </div>
                 {(selectedFile.last_commit || selectedFile.LastCommit) && (
-                  <div className="text-xs text-gray-300 mt-2 bg-gray-600 p-2 rounded-md">
+                  <div className="text-xs text-gh-dark-text-muted mt-2 bg-gh-dark-bg-secondary p-2 rounded-md">
                     <span className="font-medium">Last modified by:</span> {(selectedFile.last_commit && selectedFile.last_commit.author) || (selectedFile.LastCommit && selectedFile.LastCommit.Author) || 'Unknown'} <br />
                     <span className="font-medium">Date:</span> {
                       formatDate((selectedFile.last_commit && selectedFile.last_commit.timestamp) || 
@@ -545,8 +545,8 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                   </div>
                 )}
               </div>
-              <div className="flex-grow p-5 overflow-auto bg-gray-700">
-                <pre className="text-sm font-mono whitespace-pre-wrap bg-gray-900 p-4 rounded-md border border-gray-600 overflow-x-auto text-gray-200 shadow-inner">
+              <div className="flex-grow p-5 overflow-auto bg-gh-dark-bg-primary">
+                <pre className="text-sm font-mono whitespace-pre-wrap bg-gh-dark-bg-secondary p-4 rounded-md border border-gh-dark-border-secondary overflow-x-auto text-gh-dark-text-primary shadow-inner">
                   <code className={`language-${selectedFile.language || 'text'}`}>
                     {selectedFile.content || selectedFile.Content || ''}
                   </code>
@@ -555,11 +555,11 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
             </div>
           ) : currentDirectory ? (
             <div className="h-full flex flex-col">
-              <div className="bg-gray-800 px-4 py-2 border-b border-gray-600">
+              <div className="bg-gh-dark-bg-secondary px-4 py-2 border-b border-gh-dark-border-secondary">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium truncate text-gray-200">
+                  <h3 className="font-medium truncate text-gh-dark-text-primary">
                     <div className="flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gh-dark-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
                       {currentDirectory.name || 'Repository Root'}
@@ -567,14 +567,14 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
                   </h3>
                 </div>
               </div>
-              <div className="flex-grow p-4 overflow-auto">
-                <div className="mb-4 text-sm text-gray-300 bg-gray-700 p-3 rounded border border-gray-600">
+              <div className="flex-grow p-4 overflow-auto bg-gh-dark-bg-primary">
+                <div className="mb-4 text-sm text-gh-dark-text-muted bg-gh-dark-bg-secondary p-3 rounded border border-gh-dark-border-secondary">
                   <p>Viewing directory contents. Select a file to view its contents or click on a folder to navigate into it.</p>
                 </div>
                 
                 <div className="mt-2">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Directory Information:</h4>
-                  <div className="bg-gray-700 p-3 rounded-md text-sm text-gray-300 border border-gray-600">
+                  <h4 className="text-sm font-medium text-gh-dark-text-primary mb-2">Directory Information:</h4>
+                  <div className="bg-gh-dark-bg-secondary p-3 rounded-md text-sm text-gh-dark-text-primary border border-gh-dark-border-secondary">
                     <p><span className="font-medium">Path:</span> /{currentDirectory.path || ''}</p>
                     <p><span className="font-medium">Items:</span> {contents.length}</p>
                     <p><span className="font-medium">Files:</span> {contents.filter(item => (item.type === 'file' || item.Type === 'file')).length}</p>
@@ -584,7 +584,7 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
               </div>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
+            <div className="h-64 flex items-center justify-center text-gh-dark-text-secondary">
               Select a file to view its contents
             </div>
           )}

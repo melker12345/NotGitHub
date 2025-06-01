@@ -34,10 +34,10 @@ export const getVisibilityDescription = (isPublic) => {
  * @returns {string} - CSS classes for the repository card
  */
 export const getRepositoryCardClasses = (isPublic) => {
-  const baseClasses = 'bg-gh-dark-bg-secondary rounded-md p-4 mb-4 transition-all duration-200 border border-gh-dark-border-primary';
+  const baseClasses = 'bg-gh-dark-bg-secondary rounded-lg p-5 shadow-md transition-all duration-300 border border-gh-dark-border-primary';
   return isPublic
-    ? `${baseClasses} hover:shadow-md`
-    : `${baseClasses} hover:shadow-md`;
+    ? `${baseClasses} hover:shadow-lg hover:border-gh-dark-accent-blue/70`
+    : `${baseClasses} hover:shadow-lg hover:border-gh-dark-accent-blue/70`;
 };
 
 /**

@@ -5,6 +5,7 @@ import { repositoryService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import RepositoryCard from '../components/RepositoryCard';
 import RepositoryVisibilityBadge from '../components/RepositoryVisibilityBadge';
+import RepositoryListSection from '../components/RepositoryListSection';
 
 function ExplorePage() {
   const [repositories, setRepositories] = useState([]);
@@ -81,6 +82,8 @@ function ExplorePage() {
   
   // Handle sort change
   const handleSortChange = (e) => {
+    setRepositories([]); // Clear existing repositories
+    setHasMore(true); // Reset hasMore
     setSortOption(e.target.value);
     setPage(0); // Reset to first page when sorting changes
   };
@@ -129,73 +132,18 @@ function ExplorePage() {
         </div>
       </section>
       
-      {/* Repository List Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gh-dark-text-primary">Public Repositories</h1>
-        
-        {/* Sorting options */}
-        <div className="flex items-center">
-          <label htmlFor="sort" className="mr-2 text-gh-dark-text-secondary">Sort by:</label>
-          <select
-            id="sort"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="border text-gh-dark-text-secondary bg-gh-dark-bg-tertiary border-gh-dark-border-primary rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-gh-dark-accent-blue"
-          >
-            {sortOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Repository list */}
-      <div className="space-y-4">
-        {repositories.map(repo => (
-          <RepositoryCard key={repo.id} repository={repo} />
-        ))}
-      </div>
-
-      {/* Loading indicator */}
-      {loading && (
-        <div className="flex justify-center my-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
-        </div>
-      )}
-
-      {/* Load more button */}
-      {!loading && hasMore && (
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={loadMore}
-            className="px-4 py-2 bg-gh-dark-accent-blue text-white rounded hover:opacity-90 transition-colors"
-          >
-            Load More
-          </button>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && repositories.length === 0 && !error && (
-        <div className="text-center py-8">
-          <p className="text-gh-dark-text-muted">No public repositories found.</p>
-          {isAuthenticated && (
-            <p className="mt-2">
-              <Link to="/new" className="text-gh-dark-accent-blue hover:underline">
-                Create a new repository
-              </Link>
-            </p>
-          )}
-        </div>
-      )}
+      <RepositoryListSection
+        title="Public Repositories"
+        loading={loading}
+        error={error}
+        repositories={repositories}
+        sortOptions={sortOptions}
+        handleSortChange={handleSortChange}
+        loadMore={loadMore}
+        hasMore={hasMore}
+        showSort={true}
+        showLoadMore={true}
+      />
     </div>
   );
 }

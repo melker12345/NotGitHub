@@ -13,8 +13,35 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #0f172a; /* bg-slate-900 - darker than our containers */
-  color: #e2e8f0; /* text-gray-200 */
+  background-color: var(--gh-dark-bg-primary);
+  color: var(--gh-dark-text-primary);
+}
+
+:root {
+  /* Base Colors */
+  --gh-dark-bg-primary: #0D1117; /* Deeper dark background */
+  --gh-dark-bg-secondary: #161B22; /* Slightly lighter for cards, panels */
+  --gh-dark-bg-tertiary: #21262D; /* Even lighter for input fields, etc. */
+  --gh-dark-bg-hover: #1F6FEB1A; /* Light blue tint on hover */
+
+  /* Text Colors */
+  --gh-dark-text-primary: #E6EDF3; /* Lightest for main text */
+  --gh-dark-text-secondary: #8B949E; /* Muted for secondary info */
+  --gh-dark-text-muted: #484F58; /* Even more muted for timestamps, etc. */
+
+  /* Border Colors */
+  --gh-dark-border-primary: #30363D; /* Main border color */
+  --gh-dark-border-secondary: #21262D; /* Lighter border for dividers */
+
+  /* Accent Colors */
+  --gh-dark-accent-blue: #58A6FF; /* Primary interactive blue */
+  --gh-dark-accent-blue-hover: #79C0FF; /* Lighter blue on hover */
+  --gh-dark-accent-green: #3FB950; /* Success/Public */
+  --gh-dark-accent-yellow: #D29922; /* Warning/Private */
+  --gh-dark-accent-red: #F85149; /* Error */
+
+  /* Icon Colors */
+  --gh-dark-icon: #8B949E; /* Default icon color */
 }
 
 /* Custom animations */
