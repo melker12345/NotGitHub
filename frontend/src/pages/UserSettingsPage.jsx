@@ -18,8 +18,8 @@ function UserSettingsPage() {
   const [userStats, setUserStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState(''); // TODO: Consider separate error/success states for each form section (Profile, Password) for better UX.
+  const [successMessage, setSuccessMessage] = useState(''); // TODO: Consider separate error/success states for each form section (Profile, Password) for better UX.
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newlyGeneratedToken, setNewlyGeneratedToken] = useState('');
   const [tokenGenerationLoading, setTokenGenerationLoading] = useState(false);
@@ -65,8 +65,9 @@ function UserSettingsPage() {
     setSuccessMessage('');
 
     try {
-      // This would be implemented in a real application
-      // await userService.updateProfile(formData);
+      // TODO: Implement backend API call for profile update.
+      // Example: await userService.updateProfile({ username: formData.username, email: formData.email });
+      // Ensure backend handles username uniqueness and email validation if changed.
       setSuccessMessage('Profile updated successfully');
       
       // Clear success message after 3 seconds
@@ -94,8 +95,8 @@ function UserSettingsPage() {
     setSuccessMessage('');
 
     try {
-      // This would be implemented in a real application
-      // await userService.changePassword(formData.currentPassword, formData.newPassword);
+      // TODO: Implement backend API call for password change.
+      // Example: await userService.changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword });
       setSuccessMessage('Password changed successfully');
       
       // Clear form fields
@@ -123,8 +124,9 @@ function UserSettingsPage() {
     setError('');
 
     try {
-      // This would be implemented in a real application
-      // await userService.deleteAccount();
+      // TODO: Implement backend API call for account deletion.
+      // Example: await userService.deleteAccount(user.id);
+      // This is a critical action and needs robust confirmation and handling on the backend.
       await logout();
       navigate('/');
     } catch (err) {
@@ -386,7 +388,7 @@ function UserSettingsPage() {
           </code>
         </pre>
         <p className="text-gh-dark-text-secondary mt-2 mb-1">
-          Replace <code>YOUR_REPOSITORY_URL</code> with the full HTTP URL of your repository on NotGithub (e.g., <code>https://notgithub.example.com/username/myrepo.git</code>).
+          Replace <code>YOUR_REPOSITORY_URL</code> with the base URL of the Git server for HTTP access (e.g., <code>http://localhost:3000</code> or your production domain). The exact URL path for the <code>extraHeader</code> config might depend on your Git server's specifics; often it's the server's root or a common prefix for all repositories.
         </p>
         <p className="text-gh-dark-text-secondary mb-1">
           Replace <code>YOUR_TOKEN_HERE</code> with the persistent token you generated and copied.

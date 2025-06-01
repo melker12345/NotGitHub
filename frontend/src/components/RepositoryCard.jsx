@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import RepositoryVisibilityBadge from './RepositoryVisibilityBadge';
 import { getRepositoryCardClasses } from '../utils/repositoryVisibility';
@@ -12,6 +12,17 @@ import { formatDistanceToNow } from 'date-fns';
  * @returns {JSX.Element} - Repository card component
  */
 const RepositoryCard = ({ repository }) => {
+  const cardRef = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      setMousePosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+  };
+
   if (!repository) return null;
   
   const {
@@ -37,15 +48,29 @@ const RepositoryCard = ({ repository }) => {
   const updatedTimeAgo = updated_at ? formatDistanceToNow(new Date(updated_at), { addSuffix: true }) : '';
   const createdTimeAgo = created_at ? formatDistanceToNow(new Date(created_at), { addSuffix: true }) : '';
   
+  const gradientStyle = isHovered
+  ? {
+      background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(56, 189, 248, 0.1), transparent 70%)`,
+    }
+  : {};
+
   return (
-    <div className={cardClasses}>
+    <Link 
+      to={repoUrl} 
+      ref={cardRef}
+      className={`${cardClasses} group relative block overflow-hidden transition-all duration-300 ease-out`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onMouseMove={handleMouseMove}
+      style={gradientStyle}
+    >
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center">
             <h3 className="text-xl font-semibold mr-2">
-              <Link to={repoUrl} className="text-gh-dark-accent-blue hover:underline hover:text-gh-dark-accent-blue-hover">
+              <div className="text-gh-dark-accent-blue group-hover:text-gh-dark-accent-blue-hover">
                 {name}
-              </Link>
+              </div>
             </h3>
             <RepositoryVisibilityBadge isPublic={is_public} size="sm" />
           </div>
@@ -93,7 +118,7 @@ const RepositoryCard = ({ repository }) => {
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 };
 

@@ -97,7 +97,7 @@ function ExplorePage() {
   return (
     <div className="mx-auto space-y-8 text-gh-dark-text-secondary">
       {/* Header Section */}
-      <section className="bg-gradient-to-r from-gh-dark-accent-blue to-indigo-700 rounded-xl shadow-lg overflow-hidden">
+      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6">
           <div className="lg:flex lg:items-center lg:justify-between">
             <div className="lg:w-0 lg:flex-1">

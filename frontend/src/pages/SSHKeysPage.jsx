@@ -125,7 +125,7 @@ function SSHKeysPage() {
               rows="4"
               value={newKey.public_key}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+              className="w-full px-3 py-2 border border-gh-dark-border-primary rounded-md shadow-sm bg-gh-dark-bg-tertiary text-gh-dark-text-secondary focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue font-mono text-sm"
               placeholder="Begins with 'ssh-rsa', 'ssh-ed25519', etc."
               required
             />
@@ -193,24 +193,37 @@ function SSHKeysPage() {
         <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Setting Up SSH</h2>
         
         <div className="prose prose-invert">
-          <h3>Generate an SSH Key Pair</h3>
-          <p>Run the following command in your terminal:</p>
-          <div className="bg-gh-dark-bg-tertiary p-3 rounded-md font-mono text-sm mb-4 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
+          <h3 className="my-6 text-xl font-semibold">1. Generate an SSH Key Pair</h3>
+          <p>Open your terminal and run one of the following commands. We recommend ED25519 for better security and performance if your system supports it.</p>
+          <p className="mt-2"><strong>For ED25519 (recommended):</strong></p>
+          <div className="bg-gh-dark-bg-tertiary p-2 rounded-md font-mono text-sm mb-3 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
+            ssh-keygen -t ed25519 -C "your_email@example.com"
+          </div>
+          <p className="mt-2"><strong>Or, for RSA (older, widely compatible):</strong></p>
+          <div className="bg-gh-dark-bg-tertiary p-2 rounded-md font-mono text-sm mt-2 mb-3 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
             ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
           </div>
+          <p>Follow the prompts. You can press Enter to accept the default file location and skip setting a passphrase if you prefer (though a passphrase adds an extra layer of security).</p>
           
-          <h3>Find Your Public Key</h3>
-          <p>Your public key is typically located at:</p>
-          <ul>
-            <li>On Windows: <code>C:\Users\YOUR_USERNAME\.ssh\id_rsa.pub</code></li>
-            <li>On macOS/Linux: <code>~/.ssh/id_rsa.pub</code></li>
-          </ul>
+          <h3 className="my-6 text-xl font-semibold">2. Copy Your Public Key</h3>
+          <p>Once generated, you need to copy the content of your <strong>public</strong> key file. This is the key you'll add to your account. The file usually ends with <code>.pub</code>.</p>
+          <p className="mt-2">To copy your public key (e.g., from <code>~/.ssh/id_ed25519.pub</code> or <code>~/.ssh/id_rsa.pub</code>), first display its content in your terminal. A common command is:</p>
+          <div className="bg-gh-dark-bg-tertiary p-2 rounded-md font-mono text-sm mb-3 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
+            cat ~/.ssh/id_ed25519.pub  {/* Or use id_rsa.pub, or your specific public key file name */}
+          </div>
+          <p>Then, select and copy the entire output from your terminal. This typically starts with <code>ssh-ed25519</code> or <code>ssh-rsa</code> and ends with your email comment. This is the key you'll add to your account.</p>
+          <p className="mt-2 p-2 bg-opacity-10 bg-gh-dark-accent-red border border-gh-dark-accent-red text-gh-dark-accent-red rounded-md">
+            <strong>Important:</strong> Never share your <strong>private</strong> key (the file without <code>.pub</code>, e.g., <code>id_ed25519</code>). Keep it secret and secure!
+          </p>
+          <p className="mt-4">Once copied, paste it into the "Public Key" field above and give it a recognizable title.</p>
           
-          <h3>Using SSH with Git</h3>
-          <p>To clone a repository using SSH:</p>
-          <div className="bg-gray-700 p-3 rounded-md font-mono text-sm text-gray-200 border border-gray-600">
+          <h3 className="my-6 text-xl font-semibold">3. Using SSH with Git</h3>
+          <p>After adding your SSH key to your account, you can clone, pull, and push to your repositories over SSH.</p>
+          <p className="mt-2">For this platform, the SSH clone URL will look like this (replace <code>username/repo.git</code> with your actual repository path):</p>
+          <div className="bg-gh-dark-bg-tertiary p-2 rounded-md font-mono text-sm mb-3 text-gh-dark-text-secondary border border-gh-dark-border-secondary">
             git clone ssh://git@localhost:2222/username/repo.git
           </div>
+          <p>You can find this URL on your repository's page.</p>
         </div>
       </div>
     </div>
