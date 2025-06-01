@@ -63,6 +63,7 @@ func main() {
 	// Auth routes
 	router.HandleFunc("/api/auth/register", handlers.Register).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/auth/login", handlers.Login).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/user/git-access-token", handlers.GenerateGitAccessTokenHandler).Methods("POST", "OPTIONS") // New route for Git access token generation
 
 	// GitHub-like Repository routes
 	router.HandleFunc("/api/{username}/{reponame}", handlers.GetRepositoryByUsername).Methods("GET", "OPTIONS")

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { repositoryService } from '../services/api';
 import { format } from 'date-fns';
+import { getToken } from '../services/authService'; // Import getToken
 
 function UserSettingsPage() {
   const { user, logout } = useAuth();
@@ -302,6 +303,65 @@ function UserSettingsPage() {
             </button>
           </div>
         </form>
+      </div>
+      
+      {/* Git Access Token Section */}
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border border-gh-dark-border-primary">
+        <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Git Access Token (via HTTP)</h2>
+        <p className="text-gh-dark-text-secondary mb-4">
+          Use this token to authenticate Git operations over HTTP. This is an alternative to SSH keys.
+          Your current session token is displayed below. For long-term access, consider generating dedicated access tokens if the feature becomes available.
+        </p>
+        {user && getToken() ? (
+          <>
+            <div className="mb-4">
+              <label htmlFor="gitAccessToken" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
+                Your Access Token:
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  id="gitAccessToken"
+                  type="text"
+                  readOnly
+                  value={getToken() || ''}
+                  className="w-full px-3 py-2 bg-gh-dark-bg-tertiary border border-gh-dark-border-primary rounded-md shadow-sm text-gh-dark-text-primary focus:outline-none"
+                />
+                <button
+                  onClick={() => navigator.clipboard.writeText(getToken() || '')}
+                  className="px-3 py-2 bg-gh-dark-button-secondary-bg hover:bg-gh-dark-button-secondary-hover text-gh-dark-button-secondary-text rounded-md"
+                  title="Copy token"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 2a1 1 0 00-1 1v1H5a1 1 0 00-1 1v12a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1h-2V3a1 1 0 00-1-1H8zM7 4h6v1H7V4zm5 5H8v6h4V9z" />
+                    <path d="M8 5a1 1 0 00-1 1v10a1 1 0 001 1h4a1 1 0 001-1V6a1 1 0 00-1-1H8z" fillOpacity="0.5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <h3 className="text-lg font-medium mb-2 text-gh-dark-text-primary">How to use:</h3>
+            <p className="text-gh-dark-text-secondary mb-2">
+              To configure your local Git repository to use this token for HTTP authentication, run the following command in your repository's directory:
+            </p>
+            <pre className="bg-gh-dark-bg-tertiary p-3 rounded-md text-gh-dark-text-primary border border-gh-dark-border-primary overflow-x-auto">
+              <code>
+                git config --local http.YOUR_REPOSITORY_URL.extraHeader "Authorization: Bearer YOUR_TOKEN_HERE"
+              </code>
+            </pre>
+            <p className="text-gh-dark-text-secondary mt-2 mb-1">
+              Replace <code>YOUR_REPOSITORY_URL</code> with the full HTTP URL of your repository on NotGithub (e.g., <code>https://notgithub.example.com/username/myrepo.git</code>).
+            </p>
+            <p className="text-gh-dark-text-secondary mb-1">
+              Replace <code>YOUR_TOKEN_HERE</code> with the token copied from above.
+            </p>
+            <p className="text-sm text-gh-dark-text-tertiary mt-3">
+              <strong>Note:</strong> This token is your current session token. If you log out and log back in, this token will change. For persistent access, dedicated Git access tokens (if implemented) are recommended. Storing tokens in your Git configuration should be done with caution.
+            </p>
+          </>
+        ) : (
+          <p className="text-gh-dark-text-secondary">
+            Access token is currently unavailable. Please ensure you are logged in.
+          </p>
+        )}
       </div>
       
       {/* SSH Keys Section */}

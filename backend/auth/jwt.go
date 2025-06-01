@@ -48,6 +48,31 @@ func GenerateToken(userID string) (string, error) {
 	return tokenString, err
 }
 
+// Create long-lived JWT token for API/Git access
+func GenerateLongLivedToken(userID string, expirationInYears int) (string, error) {
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+
+	if expirationInYears <= 0 { 
+		expirationInYears = 100 
+
+	// Calculate expiration time in years
+	expirationTime := time.Now().AddDate(expirationInYears, 0, 0) // Adds years, months, days
+
+	claims := &Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtSecret)
+
+	return tokenString, err
+}
+
 // validates a JWT token
 func ValidateToken(tokenString string) (*Claims, error) {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))

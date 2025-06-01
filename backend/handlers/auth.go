@@ -20,6 +20,10 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type GitAccessTokenResponse struct {
+	GitAccessToken string `json:"git_access_token"`
+}
+
 type AuthResponse struct {
 	Token string             `json:"token"`
 	User  models.UserResponse `json:"user"`
@@ -126,5 +130,32 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// GenerateGitAccessTokenHandler creates a new long-lived token for Git access
+func GenerateGitAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
+	// Assume userID is set in the request context by an auth middleware
+	userIDVal := r.Context().Value("userID") // Use your actual context key here
+	userID, ok := userIDVal.(string)
+	if !ok || userID == "" {
+		http.Error(w, "User not authenticated or userID not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate a long-lived token (e.g., for 1 year)
+	// The '1' here represents 1 year. You can make this configurable if needed.
+	gitToken, err := auth.GenerateLongLivedToken(userID, 1)
+	if err != nil {
+		http.Error(w, "Failed to generate Git access token", http.StatusInternalServerError)
+		return
+	}
+
+	resp := GitAccessTokenResponse{
+		GitAccessToken: gitToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
 }
