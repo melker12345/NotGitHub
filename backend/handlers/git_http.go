@@ -128,19 +128,48 @@ func HandleGitHTTP(w http.ResponseWriter, r *http.Request) {
 	repoBase := filepath.Dir(filepath.Dir(repoPath))
 	log.Printf("Repository base path: %s", repoBase)
 
-	// Calculate the correct path info relative to the repository base
-	pathInfo := strings.Replace(r.URL.Path, "/git", "", 1)
-	log.Printf("PATH_INFO: %s", pathInfo)
+	pathSuffix := strings.TrimPrefix(r.URL.Path, "/git")
+
+	// Normalize the repository name in the path to include '.git'.
+	pathInfoForGitBackend := strings.Replace(pathSuffix, "/"+reponame+"/", "/"+repoDirName+"/", 1)
+	if strings.HasSuffix(pathSuffix, "/"+reponame) {
+		pathInfoForGitBackend = strings.Replace(pathSuffix, "/"+reponame, "/"+repoDirName, 1)
+	} else if pathSuffix == "/"+reponame {
+		pathInfoForGitBackend = "/" + repoDirName
+	}
+	// Fallback for cases where reponame is not directly followed by a slash (e.g. /user/reponame<service-suffix>).
+	if !strings.Contains(pathInfoForGitBackend, repoDirName) && strings.Contains(pathSuffix, reponame) {
+	    pathInfoForGitBackend = strings.Replace(pathSuffix, reponame, repoDirName, 1)
+	}
+
+	log.Printf("Derived PATH_INFO for git-http-backend: %s (from r.URL.Path: %s)", pathInfoForGitBackend, r.URL.Path)
 
 	// Set up the environment for git-http-backend
-	cmd.Env = append(os.Environ(),
-		"GIT_PROJECT_ROOT="+repoBase,
-		"GIT_HTTP_EXPORT_ALL=true",
-		"PATH_INFO="+pathInfo,
-		"QUERY_STRING="+r.URL.RawQuery,
-		"REQUEST_METHOD="+r.Method,
-		"CONTENT_TYPE="+r.Header.Get("Content-Type"),
-	)
+	baseEnvVars := map[string]string{
+		"GIT_PROJECT_ROOT": repoBase,
+		"PATH_INFO":          pathInfoForGitBackend,
+		"QUERY_STRING":       r.URL.RawQuery,
+		"REQUEST_METHOD":     r.Method,
+		"CONTENT_TYPE":       r.Header.Get("Content-Type"),
+	}
+
+	// Always export repositories when accessed via this handler, as our app handles auth.
+	baseEnvVars["GIT_HTTP_EXPORT_ALL"] = "true"
+
+	if service == "git-receive-pack" {
+		// For pushes, explicitly enable receive-pack service.
+		baseEnvVars["GIT_HTTP_RECEIVE_PACK"] = "true"
+	} else if service == "git-upload-pack" {
+		// For fetches/clones, explicitly enable upload-pack service.
+		baseEnvVars["GIT_HTTP_UPLOAD_PACK"] = "true"
+	}
+	// If service is empty (e.g. initial info/refs for clone), GIT_HTTP_EXPORT_ALL should be enough
+
+	finalEnv := os.Environ()
+	for k, v := range baseEnvVars {
+		finalEnv = append(finalEnv, k+"="+v)
+	}
+	cmd.Env = finalEnv
 
 	if r.Header.Get("Content-Length") != "" {
 		cmd.Env = append(cmd.Env, "CONTENT_LENGTH="+r.Header.Get("Content-Length"))

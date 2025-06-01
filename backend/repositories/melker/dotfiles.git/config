@@ -2,3 +2,6 @@
 	repositoryformatversion = 0
 	filemode = true
 	bare = true
+[http]
+    receivepack = true
+    uploadpack = true

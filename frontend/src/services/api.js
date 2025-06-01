@@ -291,6 +291,11 @@ export const repositoryService = {
     }
   },
   
+  // Generate a new long-lived Git access token for the authenticated user
+  generateGitAccessToken: () => {
+    return api.post('/user/git-access-token'); 
+  },
+
   // Get statistics for a specific user
   getUserStats: async (username) => {
     try {

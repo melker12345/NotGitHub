@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context" // Added for AuthMiddleware
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings" // Added for AuthMiddleware
 
+	"github-clone/auth"   // Added for AuthMiddleware
 	"github-clone/config"
 	"github-clone/handlers"
 	"github-clone/ssh"
@@ -47,6 +50,9 @@ func main() {
 
 	// Apply CORS for all routes
 	router.Use(corsMiddleware)
+
+	// Apply AuthMiddleware for all routes (it will skip public paths)
+	router.Use(AuthMiddleware)
 
 	// API routes
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +129,114 @@ func startSSHServer(port, hostKeyPath string) {
 	if err := server.Start(); err != nil {
 		log.Fatalf("Failed to start SSH server: %v", err)
 	}
+}
+
+// AuthMiddleware validates the JWT token and sets the userID in the request context.
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Define public paths that don't require authentication
+		publicPaths := []string{
+			"/api/auth/login",
+			"/api/auth/register",
+			"/api/health",
+			"/api/repositories/public",            // List all public repos
+			"/api/repositories/user",            // List a specific user's public repos
+			"/api/users/",                       // Prefix for /api/users/{username}/stats
+			"/api/public/",                    // Prefix for public repo content /api/public/{username}/{reponame}/*
+			// Git public access: info/refs for clone, and GET on /git/{username}/{reponame} for smart server discovery
+			// Actual git operations like upload-pack for public repos are handled by HandleGitHTTP's internal logic.
+			// Pushes (receive-pack) are always authenticated by HandleGitHTTP.
+		}
+
+		requestPath := r.URL.Path
+		isPublic := false
+		for _, publicPath := range publicPaths {
+			if strings.HasPrefix(requestPath, publicPath) {
+				// Allow /api/users/{username}/stats
+				if publicPath == "/api/users/" && strings.HasSuffix(requestPath, "/stats") {
+					isPublic = true
+					break
+				} else if publicPath == "/api/public/" {
+					isPublic = true
+					break
+				} else if publicPath != "/api/users/" && publicPath != "/api/public/" {
+					isPublic = true
+					break
+				}
+			}
+		}
+
+		// Handle Git routes: some can be public (for clone/fetch of public repos),
+		// but we still want to pass userID if a token is provided for potential private access checks later.
+		if strings.HasPrefix(requestPath, "/git/") {
+			tokenString := extractToken(r)
+			if tokenString != "" {
+				claims, _ := auth.ValidateToken(tokenString) // Ignore error for optional auth
+				if claims != nil {
+					ctx := context.WithValue(r.Context(), auth.UserIDKey, claims.UserID)
+					r = r.WithContext(ctx)
+				}
+			}
+			// For specific git paths like info/refs or GET on the base git path, allow if repo is public (checked in HandleGitHTTP)
+			// For git-upload-pack (fetch/clone data), also allow if repo is public (checked in HandleGitHTTP)
+			// git-receive-pack (push) is always authenticated within HandleGitHTTP.
+			if r.Method == "GET" && (strings.HasSuffix(requestPath, "/info/refs") || len(strings.Split(strings.TrimPrefix(requestPath, "/git/"), "/")) == 2) {
+				// This covers GET /git/{user}/{repo} and GET /git/{user}/{repo}/info/refs
+				// Actual public/private check happens in HandleGitHTTP
+				next.ServeHTTP(w, r)
+				return
+			}
+			if r.Method == "POST" && strings.HasSuffix(requestPath, "/git-upload-pack") {
+				// Actual public/private check happens in HandleGitHTTP
+				next.ServeHTTP(w, r)
+				return
+			}
+			// All other Git paths (like git-receive-pack) or if not explicitly public, fall through to require token
+		}
+
+		if isPublic && !strings.HasPrefix(requestPath, "/git/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// For protected paths (or Git paths not handled above as public-passthrough)
+		log.Printf("AuthMiddleware: Entering protected path logic for %s", r.URL.Path)
+		tokenString := extractToken(r)
+		if tokenString == "" {
+			log.Println("AuthMiddleware: No Authorization header for protected route")
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+		log.Printf("AuthMiddleware: Extracted token for %s. Token prefix: %s... Attempting validation.", r.URL.Path, tokenString[:min(len(tokenString),10)])
+
+		claims, err := auth.ValidateToken(tokenString)
+		if err != nil {
+			log.Printf("AuthMiddleware: Token validation FAILED for path %s. Token prefix: %s... Error: %v", r.URL.Path, tokenString[:min(len(tokenString),10)], err)
+			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+		log.Printf("AuthMiddleware: Token validation SUCCESS for UserID: %s, Path: %s", claims.UserID, r.URL.Path)
+
+		ctx := context.WithValue(r.Context(), auth.UserIDKey, claims.UserID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// min is a helper function to avoid panics if string is too short
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func extractToken(r *http.Request) string {
+	bearToken := r.Header.Get("Authorization")
+	strArr := strings.Split(bearToken, " ")
+	if len(strArr) == 2 {
+		return strArr[1]
+	}
+	return ""
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

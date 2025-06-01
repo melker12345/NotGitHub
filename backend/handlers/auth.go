@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github-clone/auth"
@@ -27,6 +28,13 @@ type GitAccessTokenResponse struct {
 type AuthResponse struct {
 	Token string             `json:"token"`
 	User  models.UserResponse `json:"user"`
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // Registration of users
@@ -135,27 +143,33 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // GenerateGitAccessTokenHandler creates a new long-lived token for Git access
 func GenerateGitAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("GenerateGitAccessTokenHandler: Entered handler")
 	// Assume userID is set in the request context by an auth middleware
-	userIDVal := r.Context().Value("userID") // Use your actual context key here
+	userIDVal := r.Context().Value(auth.UserIDKey) // Use UserIDKey from auth package
 	userID, ok := userIDVal.(string)
+	log.Printf("GenerateGitAccessTokenHandler: Attempting to get userID from context. Found: '%s', OK: %t", userID, ok)
 	if !ok || userID == "" {
-		http.Error(w, "User not authenticated or userID not found in context", http.StatusUnauthorized)
+		log.Println("GenerateGitAccessTokenHandler: User ID not found in context or is empty")
+		http.Error(w, "User ID not found in context or is empty", http.StatusUnauthorized)
 		return
 	}
+	log.Printf("GenerateGitAccessTokenHandler: UserID '%s' successfully retrieved from context", userID)
 
-	// Generate a long-lived token (e.g., for 1 year)
-	// The '1' here represents 1 year. You can make this configurable if needed.
-	gitToken, err := auth.GenerateLongLivedToken(userID, 1)
+	// Generate a long-lived token (e.g., 1 year)
+	// The actual expiration duration (e.g., 1 year) is set within GenerateLongLivedToken
+	log.Printf("GenerateGitAccessTokenHandler: Attempting to generate long-lived token for UserID: %s", userID)
+	longLivedToken, err := auth.GenerateLongLivedToken(userID, 1) // 1 for 1 year
 	if err != nil {
 		http.Error(w, "Failed to generate Git access token", http.StatusInternalServerError)
 		return
 	}
 
 	resp := GitAccessTokenResponse{
-		GitAccessToken: gitToken,
+		GitAccessToken: longLivedToken,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	log.Println("GenerateGitAccessTokenHandler: Sending token in response")
 	json.NewEncoder(w).Encode(resp)
 }

@@ -9,6 +9,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// ContextKey is a custom type for context keys to avoid collisions.
+// It's good practice to use a custom type for context keys.
+type ContextKey string
+
+// UserIDKey is the key used to store the userID in the request context.
+const UserIDKey ContextKey = "userID"
+
 // JWT errors
 var (
 	ErrInvalidToken = errors.New("invalid or expired token")
@@ -54,6 +61,7 @@ func GenerateLongLivedToken(userID string, expirationInYears int) (string, error
 
 	if expirationInYears <= 0 { 
 		expirationInYears = 100 
+	}
 
 	// Calculate expiration time in years
 	expirationTime := time.Now().AddDate(expirationInYears, 0, 0) // Adds years, months, days
