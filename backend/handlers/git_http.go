@@ -101,6 +101,27 @@ func HandleGitHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Git operation: %s, service: %s", operation, service)
 
+	// Authorize 'git-receive-pack' (push) operations
+	if service == "git-receive-pack" {
+		if userID == "" { // userID is from getUserIDOptional(r) called earlier
+			http.Error(w, "Authentication required: A valid token is needed to push.", http.StatusUnauthorized)
+			return
+		}
+		// Ensure repo object is available (fetched earlier)
+		if repo == nil {
+			log.Printf("Authorization check for push: Repository object is nil for %s/%s", username, reponame)
+			http.Error(w, "Repository not found or access denied.", http.StatusNotFound)
+			return
+		}
+		repoAccessChecker := utils.NewRepoAccess()
+		if !repoAccessChecker.CanPushToRepository(repo.OwnerID, userID) {
+			log.Printf("User %s (ID: %s) DENIED push to repo %s (OwnerID: %s)", username, userID, reponame, repo.OwnerID)
+			http.Error(w, "Forbidden: You do not have permission to push to this repository.", http.StatusForbidden)
+			return
+		}
+		log.Printf("User %s (ID: %s) ALLOWED push to repo %s (OwnerID: %s)", username, userID, reponame, repo.OwnerID)
+	}
+
 	// Execute git-http-backend as a subprocess
 	cmd := exec.Command("git", "http-backend")
 

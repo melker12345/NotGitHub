@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github-clone/config"
-	
+
 	"github.com/google/uuid"
 )
 
@@ -27,11 +27,9 @@ type SSHKeyInput struct {
 
 // CreateSSHKey adds a new SSH key for a user
 func CreateSSHKey(userID string, input SSHKeyInput, fingerprint string) (*SSHKey, error) {
-	// Generate a unique ID
 	id := uuid.New().String()
 	now := time.Now()
-	
-	// Create the SSH key struct
+
 	sshKey := &SSHKey{
 		ID:          id,
 		UserID:      userID,
@@ -40,34 +38,33 @@ func CreateSSHKey(userID string, input SSHKeyInput, fingerprint string) (*SSHKey
 		Fingerprint: fingerprint,
 		CreatedAt:   now,
 	}
-	
+
 	// Insert the SSH key into the database
 	_, err := config.DB.Exec(
 		"INSERT INTO ssh_keys (id, user_id, name, public_key, fingerprint, created_at) VALUES (?, ?, ?, ?, ?, ?)",
 		sshKey.ID, sshKey.UserID, sshKey.Name, sshKey.PublicKey, sshKey.Fingerprint, sshKey.CreatedAt,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return sshKey, nil
 }
 
-// GetSSHKeysByUserID retrieves all SSH keys for a user
 func GetSSHKeysByUserID(userID string) ([]*SSHKey, error) {
 	rows, err := config.DB.Query(
 		"SELECT id, user_id, name, public_key, fingerprint, created_at FROM ssh_keys WHERE user_id = ?",
 		userID,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	keys := []*SSHKey{}
-	
+
 	for rows.Next() {
 		var key SSHKey
 		err := rows.Scan(&key.ID, &key.UserID, &key.Name, &key.PublicKey, &key.Fingerprint, &key.CreatedAt)
@@ -76,23 +73,22 @@ func GetSSHKeysByUserID(userID string) ([]*SSHKey, error) {
 		}
 		keys = append(keys, &key)
 	}
-	
+
 	return keys, nil
 }
 
-// GetAllSSHKeys retrieves all SSH keys in the database
 func GetAllSSHKeys() ([]*SSHKey, error) {
 	rows, err := config.DB.Query(
 		"SELECT id, user_id, name, public_key, fingerprint, created_at FROM ssh_keys",
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	keys := []*SSHKey{}
-	
+
 	for rows.Next() {
 		var key SSHKey
 		err := rows.Scan(&key.ID, &key.UserID, &key.Name, &key.PublicKey, &key.Fingerprint, &key.CreatedAt)
@@ -101,53 +97,50 @@ func GetAllSSHKeys() ([]*SSHKey, error) {
 		}
 		keys = append(keys, &key)
 	}
-	
+
 	return keys, nil
 }
 
-// GetSSHKeyByID retrieves an SSH key by its ID
 func GetSSHKeyByID(id string) (*SSHKey, error) {
 	var key SSHKey
-	
+
 	err := config.DB.QueryRow(
 		"SELECT id, user_id, name, public_key, fingerprint, created_at FROM ssh_keys WHERE id = ?",
 		id,
 	).Scan(&key.ID, &key.UserID, &key.Name, &key.PublicKey, &key.Fingerprint, &key.CreatedAt)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &key, nil
 }
 
-// GetUserBySSHKey retrieves a user by SSH key fingerprint
 func GetUserBySSHKey(fingerprint string) (*User, error) {
 	var user User
-	
+
 	err := config.DB.QueryRow(`
 		SELECT u.id, u.username, u.email, u.password, u.created_at, u.updated_at 
 		FROM users u
 		JOIN ssh_keys s ON u.id = s.user_id
 		WHERE s.fingerprint = ?`,
 		fingerprint).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &user, nil
 }
 
-// DeleteSSHKey removes an SSH key from the database
 func DeleteSSHKey(id string) error {
 	_, err := config.DB.Exec("DELETE FROM ssh_keys WHERE id = ?", id)
 	return err

@@ -24,7 +24,14 @@ func InitializeGitRepository(repoPath string) error {
 		return fmt.Errorf("failed to initialize Git repository: %w\nOutput: %s", err, string(output))
 	}
 
-	log.Printf("Initialized bare Git repository at %s", repoPath)
+	// Set default branch to 'main'
+	headPath := filepath.Join(repoPath, "HEAD")
+	err = os.WriteFile(headPath, []byte("ref: refs/heads/main\n"), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to set default branch to main: %w", err)
+	}
+
+	log.Printf("Initialized bare Git repository at %s with default branch 'main'", repoPath)
 	return nil
 }
 
