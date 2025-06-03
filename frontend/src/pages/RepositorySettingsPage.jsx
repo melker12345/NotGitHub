@@ -79,17 +79,17 @@ function RepositorySettingsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gh-dark-accent-blue"></div>
       </div>
     );
   }
 
   if (error && !repository) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="bg-red-800 border border-red-600 text-red-200 px-4 py-3 rounded">
         {error}
         <p className="mt-2">
-          <Link to="/" className="text-red-700 underline">
+          <Link to="/" className="text-red-200 underline">
             Return to home
           </Link>
         </p>
@@ -98,38 +98,38 @@ function RepositorySettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 min-h-screen text-gh-dark-text-primary">
       {/* Header */}
-      <div className="flex items-center space-x-2 mb-6">
+      <div className="flex items-center space-x-2 mb-6 text-gh-dark-text-secondary">
         <Link 
           to={`/${username}/${reponame}`} 
-          className="text-blue-600 hover:underline"
+          className="text-gh-dark-accent-blue hover:underline"
         >
           {repository?.name}
         </Link>
-        <span className="text-gray-500">/</span>
-        <span className="text-gray-700">Settings</span>
+        <span>/</span>
+        <span>Settings</span>
       </div>
 
       {/* Settings Form */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6">Repository Settings</h1>
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border border-gh-dark-border-primary">
+        <h1 className="text-2xl font-bold mb-6 text-gh-dark-text-primary">Repository Settings</h1>
         
         {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-red-800 border border-red-600 text-red-200 px-4 py-3 rounded">
             {error}
           </div>
         )}
         
         {successMessage && (
-          <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <div className="mb-4 bg-green-800 border border-green-600 text-green-200 px-4 py-3 rounded">
             {successMessage}
           </div>
         )}
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Repository Name
             </label>
             <input
@@ -139,13 +139,13 @@ function RepositorySettingsPage() {
               required
               value={formData.name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gh-dark-border-secondary rounded-md shadow-sm focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue bg-gh-dark-bg-tertiary text-gh-dark-text-primary"
               placeholder="Repository name"
             />
           </div>
 
           <div className="mb-4">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-gh-dark-text-secondary mb-1">
               Description (optional)
             </label>
             <textarea
@@ -154,7 +154,7 @@ function RepositorySettingsPage() {
               rows="3"
               value={formData.description}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gh-dark-border-secondary rounded-md shadow-sm focus:outline-none focus:ring-gh-dark-accent-blue focus:border-gh-dark-accent-blue bg-gh-dark-bg-tertiary text-gh-dark-text-primary"
               placeholder="Brief description of your repository"
             />
           </div>
@@ -167,13 +167,13 @@ function RepositorySettingsPage() {
                 type="checkbox"
                 checked={formData.is_public}
                 onChange={handleChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-gh-dark-accent-blue focus:ring-gh-dark-accent-blue border-gh-dark-border-secondary rounded bg-gh-dark-bg-tertiary"
               />
-              <label htmlFor="is_public" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="is_public" className="ml-2 block text-sm text-gh-dark-text-secondary">
                 Public repository
               </label>
             </div>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gh-dark-text-muted">
               Public repositories are visible to anyone. Private repositories are only visible to you and collaborators you add.
             </p>
           </div>
@@ -182,7 +182,7 @@ function RepositorySettingsPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md ${
+              className={`px-4 py-2 bg-gh-dark-accent-blue hover:bg-gh-dark-accent-blue-hover text-white rounded-md ${
                 isSaving ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -193,13 +193,13 @@ function RepositorySettingsPage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-red-600">
-        <h2 className="text-xl font-semibold mb-4">Danger Zone</h2>
-        <div className="border border-gray-200 rounded-md">
+      <div className="bg-gh-dark-bg-secondary p-6 rounded-lg shadow-md border-t-4 border-red-600 border border-gh-dark-border-primary">
+        <h2 className="text-xl font-semibold mb-4 text-gh-dark-text-primary">Danger Zone</h2>
+        <div className="border border-gh-dark-border-secondary rounded-md">
           <div className="p-4 flex justify-between items-center">
             <div>
-              <h3 className="font-medium text-gray-900">Delete this repository</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-medium text-gh-dark-text-primary">Delete this repository</h3>
+              <p className="text-sm text-gh-dark-text-muted">
                 Once you delete a repository, there is no going back. Please be certain.
               </p>
             </div>

@@ -100,7 +100,49 @@ function FileBrowser({ username: propUsername, reponame: propReponame }) {
 
   useEffect(() => {
     fetchContents();
-  }, [fetchContents]); // Depends only on the memoized fetchContents
+  }, [fetchContents]);
+
+  // New useEffect to load README.md by default
+  useEffect(() => {
+    if (contents.length > 0 && !selectedFile && currentPath === '') {
+      const readmeFile = contents.find(
+        (item) => item.Type === 'file' && item.Name.toLowerCase() === 'readme.md'
+      );
+
+      if (readmeFile) {
+        const loadReadme = async () => {
+          setIsLoading(true);
+          setError('');
+          try {
+            const fileData = await repositoryBrowserService.getFileContentByPath(
+              username,
+              reponameProp,
+              readmeFile.Path
+            );
+            setSelectedFile({
+              ...readmeFile,
+              Content: fileData.content,
+              language: 'markdown', // Explicitly set language for README.md
+              size: fileData.size !== undefined ? fileData.size : (readmeFile.Size || readmeFile.size || 0),
+              last_commit: fileData.last_commit || readmeFile.last_commit || (readmeFile.LastCommit || readmeFile.lastCommit),
+            });
+            setTimeout(() => Prism.highlightAll(), 0);
+          } catch (err) {
+            console.error('Error fetching README.md content:', err);
+            setError('Failed to load README.md content: ' + (err.message || 'Unknown error'));
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        loadReadme();
+      } else {
+        setIsLoading(false); // If no README.md, stop loading
+      }
+    } else if (contents.length === 0 && currentPath === '') {
+      // If no contents at all in root, and not already loading, stop loading
+      setIsLoading(false);
+    }
+  }, [contents, username, reponameProp, currentPath, selectedFile]); // Added selectedFile to dependencies // Depends only on the memoized fetchContents
 
   const handleNavigate = useCallback((path) => {
     const cleanPath = path.replace(/\\/g, '/').trim();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import RepositoryVisibilityBadge from '../RepositoryVisibilityBadge';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,9 +12,22 @@ const RepositoryHeader = ({
   setShowDeleteModal,
   httpsCloneUrl,
   sshCloneUrl,
-  copyToClipboard,
   isAuthenticated,
 }) => {
+  const [copySuccess, setCopySuccess] = useState('');
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopySuccess('Copied!');
+        setTimeout(() => setCopySuccess(''), 2000);
+      },
+      () => {
+        setCopySuccess('Failed to copy');
+      }
+    );
+  };
+
   return (
     <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-6 border border-gray-700">
       <div className="flex justify-between items-start">
@@ -177,61 +190,9 @@ const RepositoryHeader = ({
         <h4 className="text-md font-semibold mb-3 text-gray-200">
           Quick setup
         </h4>
-        <div className="space-x-3 flex flex-row no-wrap">
+        <div className="flex flex-row space-x-3">
           {/* HTTPS Clone Command */}
-          {httpsCloneUrl && (
-            <div className="flex items-center">
-              <div className="flex-grow bg-gray-900 rounded-md p-3 font-mono text-sm text-gray-400 overflow-x-auto break-all">
-                {`git clone ${httpsCloneUrl}`}
-              </div>
-              <button
-                onClick={() =>
-                  copyToClipboard(
-                    `git clone ${httpsCloneUrl}`
-                  )
-                }
-                className="ml-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 flex-shrink-0"
-                title="Copy HTTPS clone command"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                </svg>
-              </button>
-            </div>
-          )}
-          {/* SSH Clone Command */}
-          {sshCloneUrl && (
-            <div className="flex items-center">
-              <div className="flex-grow bg-gray-900 rounded-md p-3 font-mono text-sm text-gray-400 overflow-x-auto break-all">
-                {`git clone ${sshCloneUrl}`}
-              </div>
-              <button
-                onClick={() =>
-                  copyToClipboard(
-                    `git clone ${sshCloneUrl}`
-                  )
-                }
-                className="ml-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 flex-shrink-0"
-                title="Copy SSH clone command"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                </svg>
-              </button>
-            </div>
-          )}
+         
         </div>
         {(httpsCloneUrl || sshCloneUrl) && (
           <p className="mt-3 text-xs text-gray-500">

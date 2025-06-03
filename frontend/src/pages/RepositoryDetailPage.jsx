@@ -140,12 +140,6 @@ function RepositoryDetailPage() {
 
   return (
     <div className="space-y-6">
-      {copySuccess && (
-        <div className="bg-green-800 border border-green-600 text-green-200 px-4 py-2 rounded fixed top-4 right-4 shadow-md">
-          {copySuccess}
-        </div>
-      )}
-
       <RepositoryHeader
         repository={repository}
         username={username}
@@ -167,10 +161,7 @@ function RepositoryDetailPage() {
 
         {/* File browser */}
         <div className="mt-6">
-          <h3 className="text-lg font-medium mb-4 text-gh-dark-text-primary">
-            Repository Contents
-          </h3>
-          <div className="bg-gh-dark-bg-tertiary p-4 rounded-lg shadow border border-gh-dark-border-secondary">
+          <div className="bg-gh-dark-bg-tertiary rounded-lg shadow border border-gh-dark-border-secondary">
             {hasFiles ? (
               <FileBrowser username={username} reponame={reponame} />
             ) : (
