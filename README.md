@@ -1,3 +1,6 @@
+# NOTE!
+you might need to remove the db file and the repositoty mapp in the backend folder for it to work.
+
 # NotGitHub
 
 NotGitHub is a self-hosted GitHub alternative that provides users with full control over their code repositories and collaboration tools. This platform enables developers to manage code, track versions, handle issues, and collaborate securely through SSH and HTTP protocols.
